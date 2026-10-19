@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ice Spot Varavoor | Handcrafted Ice Creams &amp; Production Factory</title>
+  <meta name="description" content="Discover handcrafted dessert pleasures at Ice Spot Varavoor, Thrissur. Main manufacturing factory and central hub producing 10 real fruit sticks, Sharjah shakes, authentic Falooda, and artisanal ice candies.">
+  <meta name="keywords" content="Ice Spot Varavoor, ice cream factory Kerala, ice cream Thrissur, Sharjah shake Varavoor, Falooda Thrissur, ice candy factory, dessert parlour">
+  
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍦</text></svg>">
+  
+  <!-- Google Fonts: Outfit & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- Main Website Container (Framed layout matching the design reference) -->
+  <div class="page-wrapper">
+
+    <!-- ====================================================================
+         HEADER / NAVBAR
+         ==================================================================== -->
+    <header class="site-header" id="home">
+      <!-- Left: Brand Logo -->
+      <a href="#home" class="brand-logo" id="headerLogo" aria-label="Ice Spot Varavoor Home">
+        <img src="assets/icespot-logo-new.png" alt="Icespot - Live in Freshness" class="header-logo-img">
+      </a>
+
+      <!-- Center: Navigation Links -->
+      <nav class="main-nav" id="mainNav" aria-label="Main Navigation">
+        <a href="#home" class="nav-link active" id="navHome">Home</a>
+        <a href="#flavours" class="nav-link" id="navFlavours">Our Flavours</a>
+        <a href="#about" class="nav-link" id="navAbout">Know Us</a>
+        <a href="#contact" class="nav-link" id="navContact">Contact Us</a>
+      </nav>
+
+      <!-- Right: Explore Now Button & Mobile Toggle -->
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <a href="#flavours" class="btn-order-pill" id="headerOrderBtn">
+          Explore Now
+        </a>
+        <button class="mobile-nav-toggle" id="mobileNavToggle" aria-label="Toggle navigation menu">
+          ☰
+        </button>
+      </div>
+    </header>
+
+    <!-- ====================================================================
+         HERO SECTION - ROSE-PINK WITH 10 CIRCULAR ICE CREAM STICKS
+         ==================================================================== -->
+    <section class="hero-section" id="heroSection">
+      
+      <!-- Giant Low-Opacity Background Wordmark for Depth -->
+      <div class="hero-watermark" aria-hidden="true">Icespot</div>
+
+      <!-- Floating Decorative Objects with Depth of Field -->
+      <div class="floating-decor decor-strawberry-top" aria-hidden="true">
+        <img src="assets/floating-strawberry.png" alt="" width="110" height="110" loading="eager">
+      </div>
+
+      <div class="floating-decor decor-almonds-right" aria-hidden="true">
+        <img src="assets/floating-almonds.png" alt="" width="150" height="150" loading="eager">
+      </div>
+
+      <div class="floating-decor decor-almonds-bottom-left" aria-hidden="true">
+        <img src="assets/floating-almonds.png" alt="" width="220" height="220" loading="eager">
+      </div>
+
+      <div class="floating-decor decor-strawberry-bottom-right" aria-hidden="true">
+        <img src="assets/floating-strawberry.png" alt="" width="170" height="170" loading="eager">
+      </div>
+
+      <!-- ====================================================================
+           TEN ICE CREAM STICKS CIRCULAR ATTRACTION
+           ==================================================================== -->
+      <div class="sticks-wheel-stage" id="sticksWheelStage" aria-label="Ten signature Icespot ice cream sticks arranged in a circle">
+        <!-- Subtle Icespot Wordmark & Aura Behind Sticks -->
+        <div class="wheel-backdrop-aura" aria-hidden="true">
+          <div class="wheel-aura-glow"></div>
+          <div class="wheel-center-wordmark">
+            <span class="wm-text">icespot</span>
+            <span class="wm-sub">Live in Freshness</span>
+          </div>
+        </div>
+
+        <!-- Interactive Central Flavor Indicator (Updates on hover / mobile tap) -->
+        <div class="wheel-center-hub" id="wheelCenterHub" aria-live="polite">
+          <span class="hub-badge" id="hubBadge">Artisanal Sticks</span>
+          <h2 class="hub-title" id="hubTitle">10 Real Flavours</h2>
+          <p class="hub-desc" id="hubDesc">Hover or tap any stick to explore</p>
+        </div>
+
+        <!-- The 10 Interactive Ice Cream Sticks -->
+        <div class="sticks-ring" id="sticksRing">
+          <!-- Stick 1: Sweet Strawberry -->
+          <div class="stick-item" id="stick-strawberry" data-index="0" data-flavor="Sweet Strawberry" data-tagline="Sun-ripened strawberry indulgence" data-color="#ff2a6d" data-glow="rgba(255, 80, 135, 0.75)" style="left: 44.902%; top: -0.237%; width: 11.509%; height: 31.275%; --stick-color: #ff2a6d; --stick-glow: rgba(255, 80, 135, 0.75);" role="button" tabindex="0" aria-label="Sweet Strawberry: Sun-ripened strawberry indulgence">
+            <div class="stick-hit-area">
+              <img src="assets/sticks/stick_strawberry.png" alt="Sweet Strawberry ice cream stick" class="stick-product-img" loading="eager" draggable="false">
+            </div>
+            <div class="stick-floating-tooltip" aria-hidden="true">Sweet Strawberry</div>
+          </div>
+          <!-- Stick 2: Creamy Guava & Mint -->
+          <div class="stick-item" id="stick-guava" data-index="1" data-flavor="Creamy Guava & Mint" data-tagline="Exotic tropical guava with herbal freshness" data-color="#2ec4b6" data-glow="rgba(46, 220, 200, 0.75)" style="left: 58.983%; top: 6.938%; width: 22.924%; height: 28.628%; --stick-color: #2ec4b6; --stick-glow: rgba(46, 220, 200, 0.75);" role="button" tabindex="0" aria-label="Creamy Guava & Mint: Exotic tropical guava with herbal freshness">
+            <div class="stick-hit-area">
+              <img src="assets/sticks/stick_guava.png" alt="Creamy Guava & Mint ice cream stick" class="stick-product-img" loading="eager" draggable="false">
+            </div>
+            <div class="stick-floating-tooltip" aria-hidden="true">Creamy Guava & Mint</div>
+          </div>
+          <!-- Stick 3: Alphonso Mango -->
+          <div class="stick-item" id="stick-mango" data-index="2" data-flavor="Alphonso Mango" data-tagline="Pure king-of-fruits sweetness & sunshine" data-color="#ff9f1c" data-glow="rgba(255, 185, 50, 0.8)" style="left: 69.388%; top: 25.717%; width: 29.623%; height: 20.196%; --stick-color: #ff9f1c; --stick-glow: rgba(255, 185, 50, 0.8);" role="button" tabindex="0" aria-label="Alphonso Mango: Pure king-of-fruits sweetness & sunshine">
+            <div class="stick-hit-area">
+              <img src="assets/sticks/stick_mango.png" alt="Alphonso Mango ice cream stick" class="stick-product-img" loading="eager" draggable="false">
+            </div>
+            <div class="stick-floating-tooltip" aria-hidden="true">Alphonso Mango</div>
+          </div>
+          <!-- Stick 4: Tender Coconut -->
+          <div class="stick-item" id="stick-coconut" data-index="3" data-flavor="Tender Coconut" data-tagline="Rich Malabar coastal coconut creme" data-color="#a3704c" data-glow="rgba(255, 255, 255, 0.85)" style="left: 69.47%; top: 49.677%; width: 31.132%; height: 17.647%; --stick-color: #a3704c; --stick-glow: rgba(255, 255, 255, 0.85);" role="button" tabindex="0" aria-label="Tender Coconut: Rich Malabar coastal coconut creme">
+            <div class="stick-hit-area">
+              <img src="assets/sticks/stick_coconut.png" alt="Tender Coconut ice cream stick" class="stick-product-img" loading="eager" draggable="false">
+            </div>
+            <div class="stick-floating-tooltip" aria-hidden="true">Tender Coconut</div>
+          </div>
+          <!-- Stick 5: Belgian Chocolate -->
+          <div class="stick-item" id="stick-chocolate" data-index="4" data-flavor="Belgian Chocolate" data-tagline="Deep velvety cocoa with roasted crunch" data-color="#4a2810" data-glow="rgba(240, 175, 110, 0.75)" style="left: 60.695%; top: 62.219%; width: 24.339%; height: 29.902%; --stick-color: #4a2810; --stick-glow: rgba(240, 175, 110, 0.75);" role="button" tabindex="0" aria-label="Belgian Chocolate: Deep velvety cocoa with roasted crunch">
+            <div class="stick-hit-area">
+              <img src="assets/sticks/stick_chocolate.png" alt="Belgian Chocolate ice cream stick" class="stick-product-img" loading="eager" draggable="false">
+            </div>
+            <div class="stick-floating-tooltip" aria-hidden="true">Belgian Chocolate</div>
+          </div>
+          <!-- Stick 6: Fresh Watermelon -->
+          <div class="stick-item" id="stick-watermelon" data-index="5" data-flavor="Fresh Watermelon" data-tagline="Hydrating summer crunch with choc seeds" data-color="#ff3366" data-glow="rgba(255, 75, 125, 0.75)" style="left: 43.605%; top: 67.571%; width: 11.981%; height: 32.451%; --stick-color: #ff3366; --stick-glow: rgba(255, 75, 125, 0.75);" role="button" tabindex="0" aria-label="Fresh Watermelon: Hydrating summer crunch with choc seeds">
+            <div class="stick-hit-area">
+              <img src="assets/sticks/stick_watermelon.png" alt="Fresh Watermelon ice cream stick" class="stick-product-img" loading="eager" draggable="false">
+            </div>
+            <div class="stick-floating-tooltip" aria-hidden="true">Fresh Watermelon</div>
+          </div>
+          <!-- Stick 7: Zesty Kiwi -->
+          <div class="stick-item" id="stick-kiwi" data-index="6" data-flavor="Zesty Kiwi" data-tagline="Tart & tangy New Zealand kiwi zest" data-color="#70a224" data-glow="rgba(150, 220, 50, 0.75)" style="left: 13.71%; top: 61.295%; width: 25.188%; height: 29.509%; --stick-color: #70a224; --stick-glow: rgba(150, 220, 50, 0.75);" role="button" tabindex="0" aria-label="Zesty Kiwi: Tart & tangy New Zealand kiwi zest">
+            <div class="stick-hit-area">
+              <img src="assets/sticks/stick_kiwi.png" alt="Zesty Kiwi ice cream stick" class="stick-product-img" loading="eager" draggable="false">
+            </div>
+            <div class="stick-floating-tooltip" aria-hidden="true">Zesty Kiwi</div>
+          </div>
+          <!-- Stick 8: Wild Blueberry -->
+          <div class="stick-item" id="stick-blueberry" data-index="7" data-flavor="Wild Blueberry" data-tagline="Antioxidant-rich wild forest berry swirl" data-color="#4361ee" data-glow="rgba(90, 140, 255, 0.75)" style="left: -0.539%; top: 48.728%; width: 30.849%; height: 16.667%; --stick-color: #4361ee; --stick-glow: rgba(90, 140, 255, 0.75);" role="button" tabindex="0" aria-label="Wild Blueberry: Antioxidant-rich wild forest berry swirl">
+            <div class="stick-hit-area">
+              <img src="assets/sticks/stick_blueberry.png" alt="Wild Blueberry ice cream stick" class="stick-product-img" loading="eager" draggable="false">
+            </div>
+            <div class="stick-floating-tooltip" aria-hidden="true">Wild Blueberry</div>
+          </div>
+          <!-- Stick 9: Sunshine Lemon -->
+          <div class="stick-item" id="stick-lemon" data-index="8" data-flavor="Sunshine Lemon" data-tagline="Crisp citrus burst with candied peel" data-color="#ffb703" data-glow="rgba(255, 215, 60, 0.8)" style="left: 0.962%; top: 25.563%; width: 29.717%; height: 20.0%; --stick-color: #ffb703; --stick-glow: rgba(255, 215, 60, 0.8);" role="button" tabindex="0" aria-label="Sunshine Lemon: Crisp citrus burst with candied peel">
+            <div class="stick-hit-area">
+              <img src="assets/sticks/stick_lemon.png" alt="Sunshine Lemon ice cream stick" class="stick-product-img" loading="eager" draggable="false">
+            </div>
+            <div class="stick-floating-tooltip" aria-hidden="true">Sunshine Lemon</div>
+          </div>
+          <!-- Stick 10: Royal Pomegranate -->
+          <div class="stick-item" id="stick-pomegranate" data-index="9" data-flavor="Royal Pomegranate" data-tagline="Ruby-red aril infusion & sweet zest" data-color="#d90429" data-glow="rgba(255, 60, 90, 0.75)" style="left: 18.437%; top: 6.795%; width: 23.302%; height: 27.843%; --stick-color: #d90429; --stick-glow: rgba(255, 60, 90, 0.75);" role="button" tabindex="0" aria-label="Royal Pomegranate: Ruby-red aril infusion & sweet zest">
+            <div class="stick-hit-area">
+              <img src="assets/sticks/stick_pomegranate.png" alt="Royal Pomegranate ice cream stick" class="stick-product-img" loading="eager" draggable="false">
+            </div>
+            <div class="stick-floating-tooltip" aria-hidden="true">Royal Pomegranate</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero Typography Block -->
+      <div class="hero-content">
+        <h1 class="hero-headline" id="heroHeadline">Indulge in Creamy Delights</h1>
+        <p class="hero-subtitle" id="heroSubtitle">10 Signature Handcrafted Sticks &bull; Live in Freshness</p>
+      </div>
+
+    </section>
+
+    <!-- ====================================================================
+         SIGNATURE DRIPPING CREAM DIVIDER
+         ==================================================================== -->
+    <div class="dripping-divider-wrap" aria-hidden="true">
+      <img src="assets/drips-reference-transparent.png" alt="" class="dripping-divider-img">
+    </div>
+
+    <!-- ====================================================================
+         EXPLORE OUR FLAVOURS - SEMICIRCULAR HORIZONTAL SCROLLING SHOWCASE
+         ==================================================================== -->
+    <section class="flavours-showcase-section" id="flavours">
+      <div class="showcase-header">
+        <span class="showcase-badge">Signature Ice Creams</span>
+        <h2 class="showcase-title">Explore Our Flavours</h2>
+        <p class="showcase-subtitle">Discover your next favourite &bull; Horizontally curved showcase of 10 handcrafted sticks</p>
+      </div>
+
+      <!-- Semicircular Curved Showcase Stage -->
+      <div class="semicircle-stage" id="semicircleStage" aria-label="Semicircular curved horizontal scrolling showcase of Icespot ice creams">
+        
+        <!-- Navigation Controls: Left & Right Glassmorphic Arrows -->
+        <button class="showcase-nav-arrow arrow-prev" id="showcasePrevBtn" aria-label="Previous flavour" title="Previous flavour">
+          <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+        <button class="showcase-nav-arrow arrow-next" id="showcaseNextBtn" aria-label="Next flavour" title="Next flavour">
+          <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </button>
+
+        <!-- Viewport & Semicircular Track -->
+        <div class="semicircle-viewport" id="semicircleViewport">
+          <div class="semicircle-track" id="semicircleTrack">
+            <!-- Flavour 1: Sweet Strawberry -->
+            <div class="showcase-item" id="showcase-item-0" data-index="0" data-flavor="Sweet Strawberry" data-tagline="Sun-ripened strawberry indulgence with fresh fruit sweetness" data-color="#ff2a6d" data-glow="rgba(255, 80, 135, 0.75)" data-category="Fruit Ice Stick" style="--flv-color: #ff2a6d; --flv-glow: rgba(255, 80, 135, 0.75);" role="button" tabindex="0" aria-label="Sweet Strawberry: Sun-ripened strawberry indulgence with fresh fruit sweetness">
+              <div class="showcase-card">
+                <div class="showcase-img-wrap">
+                  <img src="assets/showcase_sticks/showcase_strawberry.png" alt="Sweet Strawberry packaged ice cream" class="showcase-product-img" loading="eager" draggable="false">
+                </div>
+                <div class="showcase-label-chip">Sweet Strawberry</div>
+              </div>
+            </div>
+            <!-- Flavour 2: Creamy Guava & Mint -->
+            <div class="showcase-item" id="showcase-item-1" data-index="1" data-flavor="Creamy Guava & Mint" data-tagline="Exotic tropical guava with herbal freshness and creamy texture" data-color="#2ec4b6" data-glow="rgba(46, 220, 200, 0.75)" data-category="Tropical Blend" style="--flv-color: #2ec4b6; --flv-glow: rgba(46, 220, 200, 0.75);" role="button" tabindex="0" aria-label="Creamy Guava & Mint: Exotic tropical guava with herbal freshness and creamy texture">
+              <div class="showcase-card">
+                <div class="showcase-img-wrap">
+                  <img src="assets/showcase_sticks/showcase_guava.png" alt="Creamy Guava & Mint packaged ice cream" class="showcase-product-img" loading="eager" draggable="false">
+                </div>
+                <div class="showcase-label-chip">Creamy Guava & Mint</div>
+              </div>
+            </div>
+            <!-- Flavour 3: Alphonso Mango -->
+            <div class="showcase-item" id="showcase-item-2" data-index="2" data-flavor="Alphonso Mango" data-tagline="Pure king-of-fruits sweetness and sunshine in every creamy bite" data-color="#ff9f1c" data-glow="rgba(255, 185, 50, 0.8)" data-category="Seasonal Special" style="--flv-color: #ff9f1c; --flv-glow: rgba(255, 185, 50, 0.8);" role="button" tabindex="0" aria-label="Alphonso Mango: Pure king-of-fruits sweetness and sunshine in every creamy bite">
+              <div class="showcase-card">
+                <div class="showcase-img-wrap">
+                  <img src="assets/showcase_sticks/showcase_mango.png" alt="Alphonso Mango packaged ice cream" class="showcase-product-img" loading="eager" draggable="false">
+                </div>
+                <div class="showcase-label-chip">Alphonso Mango</div>
+              </div>
+            </div>
+            <!-- Flavour 4: Tender Coconut -->
+            <div class="showcase-item" id="showcase-item-3" data-index="3" data-flavor="Tender Coconut" data-tagline="Rich Malabar coastal coconut creme with delicate fresh pulp" data-color="#a3704c" data-glow="rgba(255, 255, 255, 0.85)" data-category="Coastal Classic" style="--flv-color: #a3704c; --flv-glow: rgba(255, 255, 255, 0.85);" role="button" tabindex="0" aria-label="Tender Coconut: Rich Malabar coastal coconut creme with delicate fresh pulp">
+              <div class="showcase-card">
+                <div class="showcase-img-wrap">
+                  <img src="assets/showcase_sticks/showcase_coconut.png" alt="Tender Coconut packaged ice cream" class="showcase-product-img" loading="eager" draggable="false">
+                </div>
+                <div class="showcase-label-chip">Tender Coconut</div>
+              </div>
+            </div>
+            <!-- Flavour 5: Belgian Chocolate -->
+            <div class="showcase-item" id="showcase-item-4" data-index="4" data-flavor="Belgian Chocolate" data-tagline="Deep velvety cocoa with roasted crunch and rich golden glaze" data-color="#4a2810" data-glow="rgba(240, 175, 110, 0.75)" data-category="Gourmet Bar" style="--flv-color: #4a2810; --flv-glow: rgba(240, 175, 110, 0.75);" role="button" tabindex="0" aria-label="Belgian Chocolate: Deep velvety cocoa with roasted crunch and rich golden glaze">
+              <div class="showcase-card">
+                <div class="showcase-img-wrap">
+                  <img src="assets/showcase_sticks/showcase_chocolate.png" alt="Belgian Chocolate packaged ice cream" class="showcase-product-img" loading="eager" draggable="false">
+                </div>
+                <div class="showcase-label-chip">Belgian Chocolate</div>
+              </div>
+            </div>
+            <!-- Flavour 6: Fresh Watermelon -->
+            <div class="showcase-item" id="showcase-item-5" data-index="5" data-flavor="Fresh Watermelon" data-tagline="Hydrating summer crunch with delicate chocolate seed chips" data-color="#ff3366" data-glow="rgba(255, 75, 125, 0.75)" data-category="Summer Refresh" style="--flv-color: #ff3366; --flv-glow: rgba(255, 75, 125, 0.75);" role="button" tabindex="0" aria-label="Fresh Watermelon: Hydrating summer crunch with delicate chocolate seed chips">
+              <div class="showcase-card">
+                <div class="showcase-img-wrap">
+                  <img src="assets/showcase_sticks/showcase_watermelon.png" alt="Fresh Watermelon packaged ice cream" class="showcase-product-img" loading="eager" draggable="false">
+                </div>
+                <div class="showcase-label-chip">Fresh Watermelon</div>
+              </div>
+            </div>
+            <!-- Flavour 7: Zesty Kiwi -->
+            <div class="showcase-item" id="showcase-item-6" data-index="6" data-flavor="Zesty Kiwi" data-tagline="Tart & tangy New Zealand kiwi zest with natural fruit seeds" data-color="#70a224" data-glow="rgba(150, 220, 50, 0.75)" data-category="Zesty Fruit" style="--flv-color: #70a224; --flv-glow: rgba(150, 220, 50, 0.75);" role="button" tabindex="0" aria-label="Zesty Kiwi: Tart & tangy New Zealand kiwi zest with natural fruit seeds">
+              <div class="showcase-card">
+                <div class="showcase-img-wrap">
+                  <img src="assets/showcase_sticks/showcase_kiwi.png" alt="Zesty Kiwi packaged ice cream" class="showcase-product-img" loading="eager" draggable="false">
+                </div>
+                <div class="showcase-label-chip">Zesty Kiwi</div>
+              </div>
+            </div>
+            <!-- Flavour 8: Wild Blueberry -->
+            <div class="showcase-item" id="showcase-item-7" data-index="7" data-flavor="Wild Blueberry" data-tagline="Antioxidant-rich wild forest berry swirl in silky cream" data-color="#4361ee" data-glow="rgba(90, 140, 255, 0.75)" data-category="Wild Berries" style="--flv-color: #4361ee; --flv-glow: rgba(90, 140, 255, 0.75);" role="button" tabindex="0" aria-label="Wild Blueberry: Antioxidant-rich wild forest berry swirl in silky cream">
+              <div class="showcase-card">
+                <div class="showcase-img-wrap">
+                  <img src="assets/showcase_sticks/showcase_blueberry.png" alt="Wild Blueberry packaged ice cream" class="showcase-product-img" loading="eager" draggable="false">
+                </div>
+                <div class="showcase-label-chip">Wild Blueberry</div>
+              </div>
+            </div>
+            <!-- Flavour 9: Sunshine Lemon -->
+            <div class="showcase-item" id="showcase-item-8" data-index="8" data-flavor="Sunshine Lemon" data-tagline="Crisp citrus burst with candied peel and invigorating zest" data-color="#ffb703" data-glow="rgba(255, 215, 60, 0.8)" data-category="Citrus Burst" style="--flv-color: #ffb703; --flv-glow: rgba(255, 215, 60, 0.8);" role="button" tabindex="0" aria-label="Sunshine Lemon: Crisp citrus burst with candied peel and invigorating zest">
+              <div class="showcase-card">
+                <div class="showcase-img-wrap">
+                  <img src="assets/showcase_sticks/showcase_lemon.png" alt="Sunshine Lemon packaged ice cream" class="showcase-product-img" loading="eager" draggable="false">
+                </div>
+                <div class="showcase-label-chip">Sunshine Lemon</div>
+              </div>
+            </div>
+            <!-- Flavour 10: Royal Pomegranate -->
+            <div class="showcase-item" id="showcase-item-9" data-index="9" data-flavor="Royal Pomegranate" data-tagline="Ruby-red aril infusion with aristocratic sweet-tart notes" data-color="#d90429" data-glow="rgba(255, 60, 90, 0.75)" data-category="Royal Indulgence" style="--flv-color: #d90429; --flv-glow: rgba(255, 60, 90, 0.75);" role="button" tabindex="0" aria-label="Royal Pomegranate: Ruby-red aril infusion with aristocratic sweet-tart notes">
+              <div class="showcase-card">
+                <div class="showcase-img-wrap">
+                  <img src="assets/showcase_sticks/showcase_pomegranate.png" alt="Royal Pomegranate packaged ice cream" class="showcase-product-img" loading="eager" draggable="false">
+                </div>
+                <div class="showcase-label-chip">Royal Pomegranate</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Flavour Info Hub Below Arc -->
+      <div class="showcase-hub-card" id="showcaseHubCard" aria-live="polite">
+        <span class="hub-category-pill" id="hubCategoryPill">Seasonal Special</span>
+        <h3 class="hub-title" id="hubTitleText">Alphonso Mango</h3>
+        <p class="hub-description" id="hubDescText">Pure king-of-fruits sweetness and sunshine in every creamy bite</p>
+        <div class="hub-footer">
+          <button class="btn-card-inquire open-order-modal" id="hubInquireBtn" data-item="Alphonso Mango">
+            Order / Inquire
+          </button>
+        </div>
+      </div>
+
+      <!-- Interactive Dots Pagination -->
+      <div class="showcase-dots" id="showcaseDots" role="tablist" aria-label="Flavour carousel pagination">
+        <button class="showcase-dot-btn" data-index="0" role="tab" aria-selected="false" aria-label="Go to Sweet Strawberry" title="Sweet Strawberry"></button>
+        <button class="showcase-dot-btn" data-index="1" role="tab" aria-selected="false" aria-label="Go to Creamy Guava & Mint" title="Creamy Guava & Mint"></button>
+        <button class="showcase-dot-btn active" data-index="2" role="tab" aria-selected="true" aria-label="Go to Alphonso Mango" title="Alphonso Mango"></button>
+        <button class="showcase-dot-btn" data-index="3" role="tab" aria-selected="false" aria-label="Go to Tender Coconut" title="Tender Coconut"></button>
+        <button class="showcase-dot-btn" data-index="4" role="tab" aria-selected="false" aria-label="Go to Belgian Chocolate" title="Belgian Chocolate"></button>
+        <button class="showcase-dot-btn" data-index="5" role="tab" aria-selected="false" aria-label="Go to Fresh Watermelon" title="Fresh Watermelon"></button>
+        <button class="showcase-dot-btn" data-index="6" role="tab" aria-selected="false" aria-label="Go to Zesty Kiwi" title="Zesty Kiwi"></button>
+        <button class="showcase-dot-btn" data-index="7" role="tab" aria-selected="false" aria-label="Go to Wild Blueberry" title="Wild Blueberry"></button>
+        <button class="showcase-dot-btn" data-index="8" role="tab" aria-selected="false" aria-label="Go to Sunshine Lemon" title="Sunshine Lemon"></button>
+        <button class="showcase-dot-btn" data-index="9" role="tab" aria-selected="false" aria-label="Go to Royal Pomegranate" title="Royal Pomegranate"></button>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         ABOUT SECTION
+         ==================================================================== -->
+    <section class="about-section" id="about">
+      <div class="about-container">
+        
+        <!-- Image & Rating Badge -->
+        <div class="about-image-wrap">
+          <img src="assets/know-us-sticks.png" alt="Icespot signature ice cream sticks: Snicrerb, Chogolbie, and Wibkoe" loading="eager" decoding="async">
+          <div class="about-rating-card">
+            <span class="rating-number">4.2</span>
+            <div>
+              <div class="rating-stars">★★★★☆</div>
+              <span class="rating-count">38 Google Reviews</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Text Content -->
+        <div class="about-content">
+          <span class="section-tag">Know Us</span>
+          <h2>The Central Ice Cream Production Factory in Varavoor</h2>
+          <p>
+            Situated in Varavoor, Wadakkanchery, Thrissur, <strong>Ice Spot Varavoor</strong> is our primary manufacturing factory and central franchise headquarters, dedicated to crafting delicious handcrafted ice creams, refreshing shakes, and artisanal ice candies.
+          </p>
+          <p>
+            As the heart of Ice Spot's production, our Varavoor factory crafts our signature 10 real fruit sticks and supplies parlours across Kerala with authentic recipes, rich cream, and pure, sun-ripened ingredients.
+          </p>
+
+          <div class="about-badges-grid">
+            <div class="about-badge">
+              <span class="badge-icon">🏭</span>
+              <div class="badge-text">
+                <h4>Central Production</h4>
+                <span>State-of-the-art facility</span>
+              </div>
+            </div>
+            <div class="about-badge">
+              <span class="badge-icon">🍓</span>
+              <div class="badge-text">
+                <h4>Fresh Flavours</h4>
+                <span>Real fruit &amp; dry fruit blends</span>
+              </div>
+            </div>
+            <div class="about-badge">
+              <span class="badge-icon">📍</span>
+              <div class="badge-text">
+                <h4>Factory Location</h4>
+                <span>Varavoor, Wadakkanchery</span>
+              </div>
+            </div>
+            <div class="about-badge">
+              <span class="badge-icon">✨</span>
+              <div class="badge-text">
+                <h4>Moderate Pricing</h4>
+                <span>Quality desserts for everyone</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         CUSTOMER REVIEWS SECTION
+         ==================================================================== -->
+    <section class="reviews-section" id="reviews">
+      <div class="section-intro">
+        <span class="section-tag">Customer Words</span>
+        <h2 class="section-title">What Our Visitors Say</h2>
+        <p class="section-subtitle">Real experiences shared by guests visiting our Varavoor factory hub &amp; franchise parlours.</p>
+      </div>
+
+      <div class="reviews-grid">
+        
+        <!-- Review 1 -->
+        <div class="review-card">
+          <span class="review-quote-mark">&ldquo;</span>
+          <p class="review-text">"Absolutely loved the refreshing flavors and friendly service"</p>
+          <div class="review-author">
+            <div class="author-avatar">★</div>
+            <div class="author-info">
+              <h4>Verified Customer</h4>
+              <span>Google Review &bull; 5/5 Stars</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Review 2 -->
+        <div class="review-card">
+          <span class="review-quote-mark">&ldquo;</span>
+          <p class="review-text">"The best place to have ice cream and ice candy in Thrissur."</p>
+          <div class="review-author">
+            <div class="author-avatar">★</div>
+            <div class="author-info">
+              <h4>Thrissur Local</h4>
+              <span>Google Review &bull; 5/5 Stars</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Review 3 -->
+        <div class="review-card">
+          <span class="review-quote-mark">&ldquo;</span>
+          <p class="review-text">"They have a variety of ice lolly options and all moderate priced."</p>
+          <div class="review-author">
+            <div class="author-avatar">★</div>
+            <div class="author-info">
+              <h4>Dessert Enthusiast</h4>
+              <span>Google Review &bull; 5/5 Stars</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         BRANCHES / LOCATIONS DIRECTORY
+         ==================================================================== -->
+    <section class="branches-section" id="branches">
+      <div class="branches-container">
+        
+        <div class="section-intro">
+          <span class="section-tag">Find Us</span>
+          <h2 class="section-title">Find an Icespot Near You</h2>
+          <p class="section-subtitle">Discover our main Varavoor production factory and explore regional franchise branches across Kerala.</p>
+        </div>
+
+        <!-- Main Franchise Varavoor Factory Feature Card -->
+        <div class="flagship-branch-card">
+          <div class="flagship-info">
+            <span class="flagship-badge">★ MAIN FRANCHISE &amp; FACTORY HEADQUARTERS</span>
+            <h3>Ice Spot Varavoor Factory</h3>
+            <p class="flagship-address">
+              Main Manufacturing Factory &amp; Central Franchise Hub, Varavoor, Wadakkanchery, Thrissur, Kerala 680585, India.
+            </p>
+            <div class="flagship-highlights">
+              <span class="flagship-tag">🏭 Main Production Hub</span>
+              <span class="flagship-tag">🍨 Pure Cream &amp; 10 Real Fruit Sticks</span>
+              <span class="flagship-tag">✨ Central Franchise Operations</span>
+            </div>
+          </div>
+          <div>
+            <a href="https://maps.google.com/?q=Varavoor+Thrissur+Kerala" target="_blank" rel="noopener noreferrer" class="btn-directions">
+              Get Directions ↗
+            </a>
+          </div>
+        </div>
+
+        <!-- Filter Controls & Search -->
+        <div class="branch-controls">
+          <div class="branch-filter-group" role="tablist">
+            <button class="branch-filter-btn active" data-region="all">All Regions</button>
+            <button class="branch-filter-btn" data-region="thrissur">Thrissur</button>
+            <button class="branch-filter-btn" data-region="ernakulam">Ernakulam</button>
+            <button class="branch-filter-btn" data-region="palakkad">Palakkad</button>
+            <button class="branch-filter-btn" data-region="other">Other Locations</button>
+          </div>
+          <div>
+            <input 
+              type="text" 
+              class="branch-search-input" 
+              id="branchSearch" 
+              placeholder="🔍 Search town, area, or code..."
+              aria-label="Search branch location"
+            >
+          </div>
+        </div>
+
+        <!-- Dynamic Branch Cards Grid (Populated via main.js) -->
+        <div class="branches-grid" id="branchesGrid"></div>
+
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         CONTACT & LOCATION SECTION
+         ==================================================================== -->
+    <section class="contact-section" id="contact">
+      <div class="contact-layout">
+        
+        <!-- Address & Contact Info -->
+        <div class="contact-card-box">
+          <span class="section-tag">Main Factory &amp; Headquarters</span>
+          <h3>
+            <span class="contact-title-desktop">Ice Spot Varavoor Factory</span>
+            <span class="contact-title-mobile">Ice Spot Varavoor</span>
+          </h3>
+          <p style="color: var(--color-text-muted); font-size: 0.95rem;">
+            Main manufacturing factory &amp; central franchise headquarters in Varavoor, Wadakkanchery, Thrissur.
+          </p>
+
+          <div class="contact-info-list">
+            <div class="contact-info-item">
+              <div class="contact-icon">📍</div>
+              <div class="contact-text">
+                <h4>Address</h4>
+                <p>Main Manufacturing Factory &amp; Central Franchise Hub, Varavoor, Wadakkanchery, Thrissur, Kerala 680585, India</p>
+              </div>
+            </div>
+
+            <div class="contact-info-item">
+              <div class="contact-icon">🏭</div>
+              <div class="contact-text">
+                <h4>Facility Category</h4>
+                <p>Central Manufacturing Factory &bull; Franchise Headquarters &bull; Artisanal Production</p>
+              </div>
+            </div>
+
+            <div class="contact-info-item">
+              <div class="contact-icon">✨</div>
+              <div class="contact-text">
+                <h4>Key Highlights</h4>
+                <p>Central Production Hub &bull; 10 Real Fruit Sticks &bull; Franchise Operations</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="contact-actions">
+            <button class="btn-whatsapp open-order-modal" data-item="Ice Spot Varavoor Factory Inquiry">
+              💬 Inquire on WhatsApp
+            </button>
+            <a href="https://maps.google.com/?q=Varavoor+Thrissur+Kerala" target="_blank" rel="noopener noreferrer" class="btn-secondary-outline">
+              Open in Maps ↗
+            </a>
+          </div>
+        </div>
+
+        <!-- Google Maps Embed -->
+        <div class="map-container">
+          <iframe 
+            title="Ice Spot Varavoor Factory Location Map"
+            src="https://maps.google.com/maps?q=Varavoor,Wadakkanchery,Thrissur,Kerala,680585&t=&z=14&ie=UTF8&iwloc=&output=embed"
+            loading="lazy"
+            allowfullscreen
+            referrerpolicy="no-referrer-when-downgrade"
+          ></iframe>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         FOOTER
+         ==================================================================== -->
+    <footer class="site-footer">
+      <div class="footer-top">
+        
+        <!-- Brand Column -->
+        <div class="footer-brand">
+          <a href="#home" class="brand-logo footer-brand-logo" aria-label="Ice Spot Home">
+            <img src="assets/icespot-logo-new.png" alt="Ice Spot - Live in Freshness" class="footer-logo-img">
+          </a>
+          <!-- Desktop Tagline & Badge -->
+          <p class="footer-tagline footer-tagline-desktop">
+            Serving handcrafted dessert pleasures, rich fruit shakes, authentic Falooda, and refreshing ice candies &bull; Main Production Factory &amp; Franchise Hub, Varavoor.
+          </p>
+          <div class="footer-badge footer-badge-desktop">
+            <span class="badge-dot"></span>
+            <span>Ice Spot Varavoor &bull; 4.2 ★ Production Factory &amp; Hub</span>
+          </div>
+          <!-- Mobile Tagline & Badge -->
+          <p class="footer-tagline footer-tagline-mobile">
+            Serving handcrafted dessert pleasures, rich fruit shakes, authentic Falooda &amp; refreshing ice candies &bull; Main Franchise &amp; Factory Hub, Ice Spot Varavoor.
+          </p>
+          <div class="footer-badge footer-badge-mobile">
+            <span class="badge-dot"></span>
+            <span>Ice Spot Varavoor &bull; 4.2 ★ Verified Hub</span>
+          </div>
+        </div>
+
+        <!-- Navigation Links Group -->
+        <div class="footer-nav-columns">
+          <div class="footer-col">
+            <h4>Navigation</h4>
+            <ul class="footer-links">
+              <li><a href="#home">Home</a></li>
+              <li><a href="#flavours">Our Flavours</a></li>
+              <li><a href="#about">Know Us</a></li>
+              <li><a href="#contact">Contact Us</a></li>
+            </ul>
+          </div>
+
+          <div class="footer-col">
+            <h4>Menu Highlights</h4>
+            <ul class="footer-links">
+              <li><a href="#flavours">English Delight</a></li>
+              <li><a href="#flavours">Sharjah Shake</a></li>
+              <li><a href="#flavours">Royal Falooda</a></li>
+              <li><a href="#flavours">Pista Shake</a></li>
+              <li><a href="#flavours">Artisanal Ice Lollies</a></li>
+            </ul>
+          </div>
+
+          <div class="footer-col footer-col-location">
+            <h4>Factory &amp; Location</h4>
+            <ul class="footer-links">
+              <li><a href="#branches">Find Nearby Branch</a></li>
+              <li><a href="#contact">Varavoor Factory, Thrissur</a></li>
+              <li><a href="#contact">Wadakkanchery, Kerala</a></li>
+              <li class="desktop-only"><a href="#reviews">Customer Reviews</a></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="footer-bottom">
+        <div class="footer-bottom-desktop">
+          <p>&copy; 2026 Ice Spot Varavoor. All rights reserved.</p>
+          <p>Main Production Factory &amp; Central Franchise Hub &bull; Varavoor, Wadakkanchery, Thrissur</p>
+        </div>
+        <div class="footer-bottom-mobile">
+          <p>&copy; 2026 Ice Spot Varavoor. All rights reserved.</p>
+          <p>Main Franchise &amp; Factory Hub &bull; Varavoor, Wadakkanchery, Thrissur</p>
+        </div>
+      </div>
+    </footer>
+
+  </div> <!-- End .page-wrapper -->
+
+  <!-- ====================================================================
+       INTERACTIVE ORDER / INQUIRY MODAL
+       ==================================================================== -->
+  <div class="modal-backdrop" id="orderModal" aria-hidden="true" role="dialog" aria-labelledby="modalTitle">
+    <div class="modal-window">
+      <button class="modal-close" aria-label="Close modal">&times;</button>
+      <h3 id="modalTitle">Order / Inquire</h3>
+      <p>Selected item: <strong id="modalSelectedProduct" style="color: var(--color-hero-red);">Ice Cream Special</strong></p>
+      
+      <div class="order-option-card" id="btnOrderWhatsApp" style="cursor: pointer;">
+        <span class="order-option-icon">💬</span>
+        <div class="order-option-info">
+          <h4>Send WhatsApp Inquiry</h4>
+          <p>Direct chat with Ice Spot Varavoor Factory for flavours, franchise &amp; orders</p>
+        </div>
+      </div>
+
+      <a href="#contact" class="order-option-card" onclick="document.getElementById('orderModal').classList.remove('open');">
+        <span class="order-option-icon">📍</span>
+        <div class="order-option-info">
+          <h4>Visit Ice Spot Varavoor Factory</h4>
+          <p>Varavoor, Wadakkanchery, Thrissur, Kerala 680585</p>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="js/main.js"></script>
+</body>
+</html>
