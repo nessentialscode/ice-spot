@@ -7,6 +7,7 @@ export const BRANCHES: Branch[] = [
     location: "Main Production Factory & Central Franchise Hub, Varavoor, Wadakkanchery, Thrissur, Kerala 680585",
     district: "Thrissur",
     region: "thrissur",
+    subRegion: "town",
     status: "factory",
     isFactoryHeadquarters: true,
     phone: "+91 94470 00000",
@@ -25,6 +26,7 @@ export const BRANCHES: Branch[] = [
     location: "Round West, Thrissur Central, Kerala",
     district: "Thrissur",
     region: "thrissur",
+    subRegion: "town",
     status: "confirmed",
     phone: "+91 94470 00001",
     mapQuery: "Round+West+Thrissur+Kerala",
@@ -37,6 +39,7 @@ export const BRANCHES: Branch[] = [
     location: "Company Padi, Bus Stop, High Road, near Fun Movies, Ollur, Thrissur",
     district: "Thrissur",
     region: "thrissur",
+    subRegion: "town",
     status: "confirmed",
     phone: "+91 94470 00002",
     mapQuery: "Company+Padi+Ollur+Thrissur",
@@ -49,6 +52,7 @@ export const BRANCHES: Branch[] = [
     location: "Shakthan Nagar, Thrissur Central",
     district: "Thrissur",
     region: "thrissur",
+    subRegion: "town",
     status: "candidate"
   },
   {
@@ -57,6 +61,7 @@ export const BRANCHES: Branch[] = [
     location: "Pudukad, Thrissur district",
     district: "Thrissur",
     region: "thrissur",
+    subRegion: "town",
     status: "candidate"
   },
   {
@@ -65,6 +70,7 @@ export const BRANCHES: Branch[] = [
     location: "Pallimoola Junction, Thrissur",
     district: "Thrissur",
     region: "thrissur",
+    subRegion: "town",
     status: "candidate"
   },
   {
@@ -73,6 +79,7 @@ export const BRANCHES: Branch[] = [
     location: "Near LF College, opposite Rajah Petrol Pump, Mammiyoor–Guruvayur Road",
     district: "Thrissur",
     region: "thrissur",
+    subRegion: "coastal",
     status: "candidate"
   },
   {
@@ -81,6 +88,7 @@ export const BRANCHES: Branch[] = [
     location: "Dubai Road, Kechery, Thrissur",
     district: "Thrissur",
     region: "thrissur",
+    subRegion: "town",
     status: "candidate"
   },
   {
@@ -89,6 +97,7 @@ export const BRANCHES: Branch[] = [
     location: "Vadanappally, Coastal Thrissur",
     district: "Thrissur",
     region: "thrissur",
+    subRegion: "coastal",
     status: "candidate"
   },
   {
@@ -97,6 +106,7 @@ export const BRANCHES: Branch[] = [
     location: "Junction, Tramway Lane, Chalakudy",
     district: "Thrissur",
     region: "thrissur",
+    subRegion: "town",
     status: "candidate"
   },
   {
@@ -105,6 +115,7 @@ export const BRANCHES: Branch[] = [
     location: "Triprayar Temple Road, Thrissur",
     district: "Thrissur",
     region: "thrissur",
+    subRegion: "coastal",
     status: "candidate"
   },
   {
@@ -113,6 +124,7 @@ export const BRANCHES: Branch[] = [
     location: "Kattoor Town, Thrissur",
     district: "Thrissur",
     region: "thrissur",
+    subRegion: "coastal",
     status: "candidate"
   },
   {
@@ -121,6 +133,7 @@ export const BRANCHES: Branch[] = [
     location: "Wadakkanchery Junction",
     district: "Thrissur",
     region: "thrissur",
+    subRegion: "town",
     status: "candidate"
   },
   {
@@ -129,6 +142,7 @@ export const BRANCHES: Branch[] = [
     location: "Kanjani Road, Thrissur",
     district: "Thrissur",
     region: "thrissur",
+    subRegion: "coastal",
     status: "candidate"
   },
   {
@@ -144,7 +158,7 @@ export const BRANCHES: Branch[] = [
     name: "Ice Spot Kadampuzha",
     location: "Kadampuzha Temple Road",
     district: "Malappuram",
-    region: "other",
+    region: "malappuram",
     status: "candidate"
   },
   {

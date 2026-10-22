@@ -3278,6 +3278,15 @@ button {
   margin-bottom: 0;
 }
 
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 /* ==========================================================================
 
    CONTACT & VISIT SECTION
@@ -3733,13 +3742,9 @@ button {
 
 
 .footer-nav-columns {
-
   display: grid;
-
-  grid-template-columns: repeat(3, 1fr);
-
-  gap: 36px;
-
+  grid-template-columns: repeat(2, 1fr);
+  gap: 48px;
 }
 
 
@@ -4632,13 +4637,9 @@ button {
 
 
   .footer-col-location {
-
-    grid-column: 1 / -1;
-
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
-
-    padding-top: 22px;
-
+    grid-column: auto;
+    border-top: none;
+    padding-top: 0;
   }
 
 

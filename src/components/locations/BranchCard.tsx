@@ -26,7 +26,10 @@ export default function BranchCard({ branch }: BranchCardProps) {
       </div>
       <p className="branch-card-location">{branch.location}</p>
       <div className="branch-card-footer">
-        <span className="branch-region-tag">📍 {branch.district}</span>
+        <span className="branch-region-tag">
+          📍 {branch.district}
+          {branch.subRegion ? ` • ${branch.subRegion === "coastal" ? "Coastal" : "Town"}` : ""}
+        </span>
         <Link href={`/contact?branch=${encodeURIComponent(branch.name)}`} className="branch-link">
           View Details &rarr;
         </Link>

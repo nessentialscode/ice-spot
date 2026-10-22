@@ -4,6 +4,8 @@ import React, { useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { OrderDetailModal } from "@/components/admin/OrderDetailModal";
 import { PrintablePackingSlip } from "@/components/admin/PrintablePackingSlip";
+import { BranchOperationsSection } from "@/components/admin/BranchOperationsSection";
+import { AddFlavourModal } from "@/components/admin/AddFlavourModal";
 import { useAdmin } from "@/context/AdminContext";
 import { AdminOrder, DispatchBatch } from "@/types/admin";
 import {
@@ -24,6 +26,10 @@ export function SuperAdminView({ userEmail }: SuperAdminViewProps) {
     orders,
     products,
     dispatches,
+    branches,
+    toggleBranchOpenStatus,
+    setAllBranchesOpenStatus,
+    addProduct,
     adjustInventory,
     approveOrder,
     showToast
@@ -31,6 +37,7 @@ export function SuperAdminView({ userEmail }: SuperAdminViewProps) {
 
   const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
   const [selectedDispatchForPrint, setSelectedDispatchForPrint] = useState<DispatchBatch | null>(null);
+  const [isAddFlavourModalOpen, setIsAddFlavourModalOpen] = useState(false);
 
   const handleQuickApprove = (order: AdminOrder) => {
     const packsMap: Record<string, number> = {};
@@ -54,12 +61,19 @@ export function SuperAdminView({ userEmail }: SuperAdminViewProps) {
   return (
     <AdminShell
       title="Youback Icespot Factory"
-      subtitle="Varavoor Central Production &amp; Logistics Headquarters"
+      subtitle="Varavoor Central Production & Logistics Headquarters"
       roleBadgeText="SUPER ADMIN"
       roleBadgeColor="rose"
       userEmail={userEmail || "admin@icespot.com"}
     >
-      {/* SECTION 1: Branch Order Replenishment Queue */}
+      {/* SECTION 1: Branch Network Operations & Outlet Status (Mark Open/Closed) */}
+      <BranchOperationsSection
+        branches={branches}
+        onToggleBranch={toggleBranchOpenStatus}
+        onSetAllBranches={setAllBranchesOpenStatus}
+      />
+
+      {/* SECTION 2: Branch Order Replenishment Queue */}
       <div className="bg-white rounded-[22px] border border-rose-100/90 shadow-[0_4px_24px_rgba(216,49,98,0.04)] p-6 sm:p-7">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 mb-5 border-b border-slate-100 gap-2">
           <div className="flex items-center gap-3">
@@ -165,7 +179,7 @@ export function SuperAdminView({ userEmail }: SuperAdminViewProps) {
         </div>
       </div>
 
-      {/* SECTION 2: Factory Flavour Inventory */}
+      {/* SECTION 3: Factory Handcrafted Flavour Inventory */}
       <div className="bg-white rounded-[22px] border border-rose-100/90 shadow-[0_4px_24px_rgba(216,49,98,0.04)] p-6 sm:p-7">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 mb-5 border-b border-slate-100 gap-2">
           <div className="flex items-center gap-3">
@@ -177,13 +191,25 @@ export function SuperAdminView({ userEmail }: SuperAdminViewProps) {
                 FACTORY HANDCRAFTED FLAVOUR INVENTORY
               </h2>
               <p className="text-xs text-slate-400 font-medium mt-0.5">
-                Varavoor central cold storage reserve stocks for 10 signature sticks (1 Crate = 10 Sticks)
+                Varavoor central cold storage reserve stocks for signature handcrafted flavours (1 Crate = 10 Sticks)
               </p>
             </div>
           </div>
 
-          <div className="text-xs font-bold text-slate-500">
-            {products.length} Flavour SKUs Monitored
+          <div className="flex items-center gap-3">
+            <div className="text-xs font-bold text-slate-500 hidden sm:block">
+              {products.length} Flavour SKUs Monitored
+            </div>
+
+            <button
+              onClick={() => setIsAddFlavourModalOpen(true)}
+              type="button"
+              className="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-gradient-to-r from-[#D83162] to-[#B51B47] hover:from-[#B51B47] hover:to-[#6D0C27] text-white shadow-xs shadow-rose-900/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-1.5 cursor-pointer"
+              title="Add a new flavour SKU to factory inventory"
+            >
+              <Plus className="w-4 h-4 stroke-[2.5]" />
+              <span>Add Flavour</span>
+            </button>
           </div>
         </div>
 
@@ -253,7 +279,7 @@ export function SuperAdminView({ userEmail }: SuperAdminViewProps) {
         </div>
       </div>
 
-      {/* SECTION 3: Active Reefer Van Logistics Dispatches */}
+      {/* SECTION 4: Active Reefer Van Logistics Dispatches */}
       <div className="bg-white rounded-[22px] border border-rose-100/90 shadow-[0_4px_24px_rgba(216,49,98,0.04)] p-6 sm:p-7">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 mb-5 border-b border-slate-100 gap-2">
           <div className="flex items-center gap-3">
@@ -359,6 +385,14 @@ export function SuperAdminView({ userEmail }: SuperAdminViewProps) {
           onClose={() => setSelectedDispatchForPrint(null)}
         />
       )}
+
+      {/* Add Flavour Modal */}
+      <AddFlavourModal
+        isOpen={isAddFlavourModalOpen}
+        onClose={() => setIsAddFlavourModalOpen(false)}
+        onAddProduct={addProduct}
+        existingCount={products.length}
+      />
     </AdminShell>
   );
 }

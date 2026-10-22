@@ -9,56 +9,132 @@ interface BranchDirectoryProps {
   showIntro?: boolean;
 }
 
-const REGION_CATEGORIES = [
-  { label: "Thrissur", value: "thrissur", districtName: "Thrissur District (Headquarters & Parlours)" },
-  { label: "Ernakulam", value: "ernakulam", districtName: "Ernakulam District & Cochin Metro" },
-  { label: "Palakkad", value: "palakkad", districtName: "Palakkad District Regional Outlet" },
-  { label: "Other Locations", value: "other", districtName: "Malappuram & Regional Network" },
+const DESKTOP_FILTERS = [
+  { label: "All Regions", value: "all" },
+  { label: "All Thrissur", value: "thrissur" },
+  { label: "Thrissur Town", value: "thrissur-town" },
+  { label: "Thrissur Coastal", value: "thrissur-coastal" },
+  { label: "Ernakulam", value: "ernakulam" },
+  { label: "Palakkad", value: "palakkad" },
+  { label: "Malappuram", value: "malappuram" },
+  { label: "Other Locations", value: "other" },
 ] as const;
+
+interface MobileCategoryConfig {
+  id: string;
+  label: string;
+  districtName: string;
+  icon: string;
+  match: (branch: (typeof BRANCHES)[number]) => boolean;
+}
+
+const MOBILE_CATEGORIES: MobileCategoryConfig[] = [
+  {
+    id: "thrissur-town",
+    label: "Thrissur Town",
+    districtName: "Central City, Swaraj Round & Inland Outlets",
+    icon: "🏙️",
+    match: (b) => b.region === "thrissur" && b.subRegion === "town",
+  },
+  {
+    id: "thrissur-coastal",
+    label: "Thrissur Coastal",
+    districtName: "Vadanappally, Triprayar & Beach Corridor",
+    icon: "🌊",
+    match: (b) => b.region === "thrissur" && b.subRegion === "coastal",
+  },
+  {
+    id: "ernakulam",
+    label: "Ernakulam",
+    districtName: "Ernakulam District & Cochin Metro",
+    icon: "📍",
+    match: (b) => b.region === "ernakulam" || b.district.toLowerCase() === "ernakulam",
+  },
+  {
+    id: "palakkad",
+    label: "Palakkad",
+    districtName: "Palakkad District Regional Outlet",
+    icon: "📍",
+    match: (b) => b.region === "palakkad" || b.district.toLowerCase() === "palakkad",
+  },
+  {
+    id: "malappuram",
+    label: "Malappuram",
+    districtName: "Malappuram District Regional Outlet",
+    icon: "📍",
+    match: (b) => b.region === "malappuram" || b.district.toLowerCase() === "malappuram",
+  },
+  {
+    id: "other",
+    label: "Other Locations",
+    districtName: "Regional Kerala Network",
+    icon: "📍",
+    match: (b) => b.region === "other",
+  },
+];
 
 export default function BranchDirectory({ showIntro = true }: BranchDirectoryProps) {
   const [selectedRegion, setSelectedRegion] = useState<Region>("all");
+  const [selectedMobileCategory, setSelectedMobileCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
   const trimmedQuery = searchQuery.toLowerCase().trim();
 
+  const matchesSearch = (branch: (typeof BRANCHES)[number]) => {
+    if (!trimmedQuery) return true;
+    return (
+      branch.name.toLowerCase().includes(trimmedQuery) ||
+      branch.location.toLowerCase().includes(trimmedQuery) ||
+      branch.district.toLowerCase().includes(trimmedQuery) ||
+      (branch.subRegion && branch.subRegion.toLowerCase().includes(trimmedQuery))
+    );
+  };
+
   // Desktop filtered branches
   const desktopFilteredBranches = useMemo(() => {
     return BRANCHES.filter((branch) => {
-      const matchesRegion = selectedRegion === "all" || branch.region === selectedRegion;
-      const matchesSearch =
-        !trimmedQuery ||
-        branch.name.toLowerCase().includes(trimmedQuery) ||
-        branch.location.toLowerCase().includes(trimmedQuery) ||
-        branch.district.toLowerCase().includes(trimmedQuery);
-      return matchesRegion && matchesSearch;
+      let matchesRegion = true;
+      if (selectedRegion === "all") {
+        matchesRegion = true;
+      } else if (selectedRegion === "thrissur") {
+        matchesRegion = branch.region === "thrissur";
+      } else if (selectedRegion === "thrissur-town") {
+        matchesRegion = branch.region === "thrissur" && branch.subRegion === "town";
+      } else if (selectedRegion === "thrissur-coastal") {
+        matchesRegion = branch.region === "thrissur" && branch.subRegion === "coastal";
+      } else {
+        matchesRegion = branch.region === selectedRegion;
+      }
+
+      return matchesRegion && matchesSearch(branch);
     });
   }, [selectedRegion, trimmedQuery]);
 
-  // Mobile grouped branches by category
+  // Mobile grouped branches by category (Thrissur Town, Thrissur Coastal, Ernakulam, Palakkad, Other)
   const mobileCategoryGroups = useMemo(() => {
-    return REGION_CATEGORIES.map((category) => {
+    return MOBILE_CATEGORIES.map((category) => {
       const branches = BRANCHES.filter((branch) => {
-        const matchesCategory = branch.region === category.value;
-        const matchesSearch =
-          !trimmedQuery ||
-          branch.name.toLowerCase().includes(trimmedQuery) ||
-          branch.location.toLowerCase().includes(trimmedQuery) ||
-          branch.district.toLowerCase().includes(trimmedQuery);
-        return matchesCategory && matchesSearch;
+        return category.match(branch) && matchesSearch(branch);
       });
 
       return {
         ...category,
-        branches
+        branches,
       };
     });
   }, [trimmedQuery]);
 
-  const mobileTotalMatches = mobileCategoryGroups.reduce(
-    (sum, group) => sum + group.branches.length,
-    0
-  );
+  // Filtered categories according to selected mobile chip
+  const displayedMobileGroups = useMemo(() => {
+    if (selectedMobileCategory === "all") {
+      return mobileCategoryGroups;
+    }
+    return mobileCategoryGroups.filter((g) => g.id === selectedMobileCategory);
+  }, [mobileCategoryGroups, selectedMobileCategory]);
+
+  const mobileTotalMatches = useMemo(() => {
+    return mobileCategoryGroups.reduce((sum, group) => sum + group.branches.length, 0);
+  }, [mobileCategoryGroups]);
 
   return (
     <section className="branches-section" id="branches">
@@ -100,21 +176,13 @@ export default function BranchDirectory({ showIntro = true }: BranchDirectoryPro
         </div>
 
         {/* =========================================================================
-            DESKTOP LAYOUT (Unchanged desktop view with filters, search, and grid)
+            DESKTOP LAYOUT (Full grid with All Regions, Thrissur Town, Thrissur Coastal filters)
            ========================================================================= */}
         <div className="hidden md:block">
           {/* Desktop Filter Controls & Search */}
           <div className="branch-controls">
             <div className="branch-filter-group" role="tablist" aria-label="Filter branches by region">
-              {(
-                [
-                  { label: "All Regions", value: "all" },
-                  { label: "Thrissur", value: "thrissur" },
-                  { label: "Ernakulam", value: "ernakulam" },
-                  { label: "Palakkad", value: "palakkad" },
-                  { label: "Other Locations", value: "other" },
-                ] as const
-              ).map((filter) => (
+              {DESKTOP_FILTERS.map((filter) => (
                 <button
                   key={filter.value}
                   className={`branch-filter-btn ${selectedRegion === filter.value ? "active" : ""}`}
@@ -162,34 +230,76 @@ export default function BranchDirectory({ showIntro = true }: BranchDirectoryPro
         </div>
 
         {/* =========================================================================
-            MOBILE LAYOUT (Each category has its own horizontal scrolling row)
+            MOBILE LAYOUT (Categorised into Thrissur Town, Thrissur Coastal, etc. with horizontal swipe)
            ========================================================================= */}
         <div className="block md:hidden mt-6">
           {/* Mobile Search Bar */}
-          <div className="mb-6">
+          <div className="mb-4">
             <input
               type="text"
               className="branch-search-input w-full"
               id="branchSearchMobile"
-              placeholder="🔍 Search town, area, or code..."
+              placeholder="🔍 Search town, coastal, area, or code..."
               aria-label="Search branch location on mobile"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
 
+          {/* Quick Mobile Category Filter Chips */}
+          <div className="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-none -mx-1 px-1">
+            <button
+              id="mobile-cat-chip-all"
+              data-category="all"
+              onClick={() => setSelectedMobileCategory("all")}
+              className={`whitespace-nowrap px-3.5 py-1.5 text-xs font-bold rounded-full transition-all ${
+                selectedMobileCategory === "all"
+                  ? "bg-[#6D0C27] text-white shadow-sm"
+                  : "bg-white text-slate-700 border border-slate-200"
+              }`}
+            >
+              All Regions ({mobileTotalMatches})
+            </button>
+            {mobileCategoryGroups.map((cat) => (
+              <button
+                key={cat.id}
+                id={`mobile-cat-chip-${cat.id}`}
+                data-category={cat.id}
+                onClick={() => setSelectedMobileCategory(cat.id)}
+                className={`whitespace-nowrap px-3.5 py-1.5 text-xs font-bold rounded-full transition-all flex items-center gap-1.5 ${
+                  selectedMobileCategory === cat.id
+                    ? "bg-[#6D0C27] text-white shadow-sm"
+                    : "bg-white text-slate-700 border border-slate-200"
+                }`}
+              >
+                <span>{cat.icon}</span>
+                <span>{cat.label}</span>
+                <span
+                  className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                    selectedMobileCategory === cat.id
+                      ? "bg-white/20 text-white"
+                      : "bg-[#FDE8ED] text-[#D83162]"
+                  }`}
+                >
+                  {cat.branches.length}
+                </span>
+              </button>
+            ))}
+          </div>
+
           {/* Mobile Horizontal Scrolling Rows by Category */}
           {mobileTotalMatches > 0 ? (
             <div className="space-y-8">
-              {mobileCategoryGroups.map((group) => {
+              {displayedMobileGroups.map((group) => {
                 if (group.branches.length === 0) return null;
 
                 return (
-                  <div key={group.value} className="mobile-branch-category">
+                  <div key={group.id} className="mobile-branch-category">
                     {/* Category Header */}
                     <div className="flex items-center justify-between mb-3 px-1">
                       <div>
                         <h3 className="text-base font-extrabold text-[#6D0C27] tracking-tight flex items-center gap-2">
+                          <span>{group.icon}</span>
                           <span>{group.label}</span>
                           <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#FDE8ED] text-[#D83162] border border-[#D83162]/20">
                             {group.branches.length} {group.branches.length === 1 ? "Outlet" : "Outlets"}

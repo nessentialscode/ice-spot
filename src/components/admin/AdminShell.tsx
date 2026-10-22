@@ -100,18 +100,18 @@ export function AdminShell({
       {/* Top Navigation Bar - Matched with Reference Image */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-rose-100/90 px-4 sm:px-8 py-3.5 shadow-[0_2px_12px_rgba(216,49,98,0.03)]">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-          {/* Left: Brand Squircle Emblem + Title + Role Badge + Subtitle */}
-          <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-[#E22F62] to-[#BD1F49] shadow-sm shadow-[#E22F62]/20 flex items-center justify-center p-2 flex-shrink-0">
+          {/* Left: Brand Logo + Title + Role Badge + Subtitle */}
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+            <Link href="/admin" className="flex-shrink-0 hover:opacity-90 transition-opacity">
               <Image
-                src="/assets/icespot-logo-new.png"
-                alt="Icespot"
-                width={36}
-                height={20}
+                src="/assets/icespot-brand-logo.png"
+                alt="YouBack Icespot"
+                width={140}
+                height={67}
                 priority
-                className="w-full h-auto object-contain brightness-0 invert"
+                className="h-9 sm:h-10 w-auto object-contain"
               />
-            </div>
+            </Link>
 
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">

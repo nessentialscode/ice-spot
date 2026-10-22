@@ -84,3 +84,84 @@ export async function requireAdminRole(allowedRoles: string[]): Promise<{
 
   return { user, profile };
 }
+
+/**
+ * Validates that the request comes from an authenticated, active user with Super Admin privileges.
+ * For use in Server Actions (returns structured result instead of redirecting).
+ */
+export async function validateSuperAdminAction(): Promise<{
+  isAuthorized: boolean;
+  user?: { id: string; email?: string };
+  profile?: UserProfile;
+  error?: string;
+  message?: string;
+}> {
+  const { user, profile, error } = await getAuthenticatedProfile();
+
+  if (!user || error === "unauthenticated") {
+    return {
+      isAuthorized: false,
+      error: "UNAUTHENTICATED",
+      message: "Authentication required to perform administrative operations.",
+    };
+  }
+
+  if (!profile || error === "profile_missing") {
+    return {
+      isAuthorized: false,
+      error: "PROFILE_MISSING",
+      message: "No profile found for authenticated account.",
+    };
+  }
+
+  if (!profile.is_active || error === "profile_inactive") {
+    return {
+      isAuthorized: false,
+      error: "PROFILE_INACTIVE",
+      message: "Account is deactivated. Access denied.",
+    };
+  }
+
+  const normalizedRole = profile.role.toLowerCase().replace(/-/g, "_");
+  if (normalizedRole !== "super_admin") {
+    return {
+      isAuthorized: false,
+      error: "FORBIDDEN",
+      message: "Super Admin authority required for this operation.",
+    };
+  }
+
+  return { isAuthorized: true, user, profile };
+}
+
+/**
+ * Validates that the request comes from an authenticated, active user.
+ * For use in Server Actions.
+ */
+export async function validateAuthenticatedAction(): Promise<{
+  isAuthorized: boolean;
+  user?: { id: string; email?: string };
+  profile?: UserProfile;
+  error?: string;
+  message?: string;
+}> {
+  const { user, profile, error } = await getAuthenticatedProfile();
+
+  if (!user || error === "unauthenticated") {
+    return {
+      isAuthorized: false,
+      error: "UNAUTHENTICATED",
+      message: "Authentication required.",
+    };
+  }
+
+  if (!profile || error === "profile_missing" || !profile.is_active || error === "profile_inactive") {
+    return {
+      isAuthorized: false,
+      error: "PROFILE_INACTIVE",
+      message: "Active profile required.",
+    };
+  }
+
+  return { isAuthorized: true, user, profile };
+}

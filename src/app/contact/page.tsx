@@ -3,24 +3,43 @@
 import React, { useState } from "react";
 import ContactSection from "@/components/home/ContactSection";
 import DripDivider from "@/components/home/DripDivider";
+import { submitEnquiryAction } from "@/lib/actions/enquiries";
 
 export default function ContactPage() {
   const [formState, setFormState] = useState({
     name: "",
     phone: "",
     email: "",
-    enquiryType: "franchise",
+    enquiryType: "franchise" as "general" | "franchise" | "bulk_order" | "wholesale" | "feedback",
     message: "",
   });
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const encodedMsg = encodeURIComponent(
-      `*New Factory Enquiry from Website*\n*Name:* ${formState.name}\n*Phone:* ${formState.phone}\n*Type:* ${formState.enquiryType}\n*Message:* ${formState.message || "I would like to inquire about Icespot."}`
-    );
-    window.open(`https://wa.me/?text=${encodedMsg}`, "_blank", "noopener,noreferrer");
-    setSubmitted(true);
+    setIsSubmitting(true);
+
+    try {
+      // 1. Persist enquiry into Supabase database
+      await submitEnquiryAction({
+        name: formState.name,
+        phone: formState.phone,
+        email: formState.email || undefined,
+        enquiryType: formState.enquiryType,
+        message: formState.message || "I would like to inquire about Icespot.",
+      });
+    } catch (err) {
+      console.warn("Could not save enquiry to database:", err);
+    } finally {
+      setIsSubmitting(false);
+      // 2. Open WhatsApp for instant response
+      const encodedMsg = encodeURIComponent(
+        `*New Factory Enquiry from Website*\n*Name:* ${formState.name}\n*Phone:* ${formState.phone}\n*Type:* ${formState.enquiryType}\n*Message:* ${formState.message || "I would like to inquire about Icespot."}`
+      );
+      window.open(`https://wa.me/?text=${encodedMsg}`, "_blank", "noopener,noreferrer");
+      setSubmitted(true);
+    }
   };
 
   return (
@@ -126,7 +145,7 @@ export default function ContactPage() {
                   <select
                     id="enquiryType"
                     value={formState.enquiryType}
-                    onChange={(e) => setFormState({ ...formState, enquiryType: e.target.value })}
+                    onChange={(e) => setFormState({ ...formState, enquiryType: e.target.value as any })}
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#D83162] focus:border-transparent text-sm bg-white"
                   >
                     <option value="franchise">Franchise Partnership</option>
@@ -153,9 +172,10 @@ export default function ContactPage() {
 
               <button
                 type="submit"
-                className="w-full py-3.5 px-6 rounded-xl font-bold text-white bg-gradient-to-r from-[#D83162] to-[#B51B47] hover:from-[#B51B47] hover:to-[#6D0C27] shadow-lg shadow-rose-900/20 transition-all duration-200 text-sm flex items-center justify-center gap-2"
+                disabled={isSubmitting}
+                className="w-full py-3.5 px-6 rounded-xl font-bold text-white bg-gradient-to-r from-[#D83162] to-[#B51B47] hover:from-[#B51B47] hover:to-[#6D0C27] disabled:opacity-75 disabled:cursor-not-allowed shadow-lg shadow-rose-900/20 transition-all duration-200 text-sm flex items-center justify-center gap-2"
               >
-                <span>💬 Submit &amp; Chat on WhatsApp</span>
+                <span>{isSubmitting ? "⏳ Saving Enquiry..." : "💬 Submit & Chat on WhatsApp"}</span>
               </button>
             </form>
           )}

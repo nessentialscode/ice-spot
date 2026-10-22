@@ -22,6 +22,11 @@ import {
   INITIAL_INVENTORY_LOGS
 } from "@/lib/data/adminMockData";
 import { BRANCHES } from "@/lib/data/branches";
+import { Branch } from "@/types";
+import { createOrderAction, approveOrderAction, updateOrderStatusAction } from "@/lib/actions/orders";
+import { adjustInventoryAction, createProductAction } from "@/lib/actions/inventory";
+import { createDispatchAction, updateStopStatusAction } from "@/lib/actions/dispatches";
+import { toggleBranchStatusAction, setAllBranchesStatusAction } from "@/lib/actions/branches";
 
 interface ToastNotification {
   id: number;
@@ -98,6 +103,10 @@ interface AdminContextType {
     changeAmount: number,
     reason: "Production Output" | "Damaged Stock" | "Inventory Audit" | "Manual Correction"
   ) => void;
+  branches: (Branch & { isOpen: boolean })[];
+  toggleBranchOpenStatus: (branchId: string) => void;
+  setAllBranchesOpenStatus: (isOpen: boolean) => void;
+  addProduct: (product: Omit<AdminProduct, "id"> & { id?: string }) => void;
   toggleProductActive: (productId: string) => void;
   saveProduct: (product: AdminProduct) => void;
   resetDemoData: () => void;
@@ -118,6 +127,9 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<AdminUserAccount[]>(INITIAL_ADMIN_USERS);
   const [discrepancies, setDiscrepancies] = useState<DiscrepancyReport[]>(INITIAL_DISCREPANCIES);
   const [inventoryLogs, setInventoryLogs] = useState<InventoryAdjustmentLog[]>(INITIAL_INVENTORY_LOGS);
+  const [branches, setBranches] = useState<(Branch & { isOpen: boolean })[]>(() =>
+    BRANCHES.map((b) => ({ ...b, isOpen: b.status !== "candidate" }))
+  );
   const [toast, setToast] = useState<ToastNotification | null>(null);
 
   // Load from localStorage once on mount
@@ -133,6 +145,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         if (parsed.users) setUsers(parsed.users);
         if (parsed.discrepancies) setDiscrepancies(parsed.discrepancies);
         if (parsed.inventoryLogs) setInventoryLogs(parsed.inventoryLogs);
+        if (parsed.branches) setBranches(parsed.branches);
         if (parsed.demoRole) setDemoRole(parsed.demoRole);
         if (parsed.demoBranchId) setDemoBranchId(parsed.demoBranchId);
         if (parsed.demoDriverId) setDemoDriverId(parsed.demoDriverId);
@@ -153,6 +166,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         users,
         discrepancies,
         inventoryLogs,
+        branches,
         demoRole,
         demoBranchId,
         demoDriverId,
@@ -179,6 +193,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     setUsers(INITIAL_ADMIN_USERS);
     setDiscrepancies(INITIAL_DISCREPANCIES);
     setInventoryLogs(INITIAL_INVENTORY_LOGS);
+    setBranches(BRANCHES.map((b) => ({ ...b, isOpen: b.status !== "candidate" })));
     if (typeof window !== "undefined") {
       localStorage.removeItem(STORAGE_KEY);
     }
@@ -249,6 +264,17 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     const updated = [newOrder, ...orders];
     setOrders(updated);
     persistState({ orders: updated });
+
+    // Asynchronously synchronize with Supabase PostgreSQL
+    createOrderAction({
+      branchId: data.branchId,
+      branchName,
+      district: branch?.district || "Thrissur",
+      items: newOrder.items,
+      requestedDeliveryDate: data.requestedDeliveryDate,
+      notes: data.notes,
+    }).catch((err) => console.warn("[AdminContext] Server order sync error:", err));
+
     showToast(`Order ${orderNumber} submitted successfully to Varavoor Factory!`, "success");
     return orderId;
   };
@@ -341,6 +367,11 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     });
     setOrders(updated);
     persistState({ orders: updated });
+
+    // Asynchronously synchronize with Supabase PostgreSQL
+    updateOrderStatusAction(orderId, "cancelled", reason)
+      .catch((err) => console.warn("[AdminContext] Server order cancel sync error:", err));
+
     showToast(`Order has been marked cancelled.`, "info");
   };
 
@@ -456,6 +487,11 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
     setOrders(updatedOrders);
     persistState({ orders: updatedOrders, products: updatedProducts });
+
+    // Asynchronously synchronize with Supabase PostgreSQL
+    approveOrderAction(orderId, approvedPacksMap, factoryNotes)
+      .catch((err) => console.warn("[AdminContext] Server order approval sync error:", err));
+
     showToast(`Order approved. Quantities locked and reserved in cold storage.`, "success");
   };
 
@@ -619,6 +655,17 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     setDispatches(updatedDispatches);
     setOrders(updatedOrders);
     persistState({ dispatches: updatedDispatches, orders: updatedOrders });
+
+    // Asynchronously synchronize with Supabase PostgreSQL
+    createDispatchAction({
+      vehicleNumber: data.vehicleNumber,
+      driverId: data.driverId,
+      driverName: data.driverName,
+      driverPhone: driverUser?.phone,
+      orderIds: data.orderIds,
+      notes: data.notes,
+    }).catch((err) => console.warn("[AdminContext] Server dispatch sync error:", err));
+
     showToast(`Dispatch manifest ${manifestNumber} generated with ${stops.length} stops!`, "success");
     return dispatchId;
   };
@@ -794,6 +841,11 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     setDispatches(updatedDispatches);
     setOrders(updatedOrders);
     persistState({ dispatches: updatedDispatches, orders: updatedOrders });
+
+    // Asynchronously synchronize with Supabase PostgreSQL
+    updateStopStatusAction(dispatchId, orderId, status, deliveredUnits, notes, failureReason)
+      .catch((err) => console.warn("[AdminContext] Server stop update sync error:", err));
+
     showToast(`Stop status updated to: ${status}`, "success");
   };
 
@@ -954,6 +1006,11 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     setProducts(updatedProducts);
     setInventoryLogs(updatedLogs);
     persistState({ products: updatedProducts, inventoryLogs: updatedLogs });
+
+    // Asynchronously synchronize with Supabase PostgreSQL
+    adjustInventoryAction(productId, changeAmount, reason)
+      .catch((err) => console.warn("[AdminContext] Server inventory adjustment sync error:", err));
+
     showToast(`Inventory adjusted: ${prodName} (${changeAmount > 0 ? "+" : ""}${changeAmount} units)`, "success");
   };
 
@@ -990,6 +1047,68 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     persistState({ products: updated });
   };
 
+  // 16. Add New Product / Flavour
+  const addProduct = (productData: Omit<AdminProduct, "id"> & { id?: string }) => {
+    const id = productData.id || `flv-${Date.now().toString(36)}`;
+    const newProd: AdminProduct = {
+      ...productData,
+      id,
+      reservedStock: productData.reservedStock || 0,
+      isAvailable: productData.isAvailable ?? true,
+      isActive: productData.isActive ?? true,
+    };
+    saveProduct(newProd);
+
+    // Asynchronously synchronize with Supabase PostgreSQL
+    createProductAction({
+      id: newProd.id,
+      name: newProd.name,
+      sku: newProd.sku,
+      category: newProd.category,
+      packType: newProd.packType,
+      unitsPerPack: newProd.unitsPerPack,
+      currentStock: newProd.currentStock,
+      minStockAlert: newProd.minStockAlert,
+      color: newProd.color,
+      imageUrl: newProd.imageUrl,
+    }).catch((err) => console.warn("[AdminContext] Server product creation sync error:", err));
+  };
+
+  // 17. Toggle Branch Open / Closed Status
+  const toggleBranchOpenStatus = (branchId: string) => {
+    let nextOpen = true;
+    const updated = branches.map((b) => {
+      if (b.id !== branchId) return b;
+      nextOpen = !b.isOpen;
+      showToast(
+        `${b.name} marked as ${nextOpen ? "OPEN" : "CLOSED"}.`,
+        nextOpen ? "success" : "info"
+      );
+      return { ...b, isOpen: nextOpen };
+    });
+    setBranches(updated);
+    persistState({ branches: updated });
+
+    // Asynchronously synchronize with Supabase PostgreSQL
+    toggleBranchStatusAction(branchId, nextOpen)
+      .catch((err) => console.warn("[AdminContext] Server branch status toggle sync error:", err));
+  };
+
+  // 18. Set All Branches Open / Closed
+  const setAllBranchesOpenStatus = (isOpen: boolean) => {
+    const updated = branches.map((b) => ({ ...b, isOpen }));
+    setBranches(updated);
+    persistState({ branches: updated });
+    showToast(
+      isOpen ? "All regional parlour branches marked as OPEN." : "All regional parlour branches marked as CLOSED.",
+      isOpen ? "success" : "info"
+    );
+
+    // Asynchronously synchronize with Supabase PostgreSQL
+    setAllBranchesStatusAction(isOpen)
+      .catch((err) => console.warn("[AdminContext] Server set all branches status sync error:", err));
+  };
+
   return (
     <AdminContext.Provider
       value={{
@@ -1014,6 +1133,10 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         users,
         discrepancies,
         inventoryLogs,
+        branches,
+        toggleBranchOpenStatus,
+        setAllBranchesOpenStatus,
+        addProduct,
         toast,
         showToast,
         submitOrder,

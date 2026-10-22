@@ -20,7 +20,7 @@ export default function Footer() {
 
           {/* Desktop Tagline & Badge */}
           <p className="footer-tagline footer-tagline-desktop">
-            Serving handcrafted dessert pleasures, rich fruit shakes, authentic Falooda, and refreshing ice candies &bull; Main Production Factory &amp; Franchise Hub, Varavoor.
+            Serving handcrafted real fruit ice cream pleasures and artisanal frozen candies &bull; Main Production Factory &amp; Franchise Hub, Varavoor.
           </p>
           <div className="footer-badge footer-badge-desktop">
             <span className="badge-dot"></span>
@@ -29,7 +29,7 @@ export default function Footer() {
 
           {/* Mobile Tagline & Badge */}
           <p className="footer-tagline footer-tagline-mobile">
-            Serving handcrafted dessert pleasures, rich fruit shakes, authentic Falooda &amp; refreshing ice candies &bull; Main Franchise &amp; Factory Hub, Ice Spot Varavoor.
+            Serving handcrafted real fruit ice creams &amp; artisanal frozen delights &bull; Main Franchise &amp; Factory Hub, Ice Spot Varavoor.
           </p>
           <div className="footer-badge footer-badge-mobile">
             <span className="badge-dot"></span>
@@ -47,17 +47,6 @@ export default function Footer() {
               <li><Link href="/about">Know Us</Link></li>
               <li><Link href="/locations">Find Locations</Link></li>
               <li><Link href="/contact">Contact Us</Link></li>
-            </ul>
-          </div>
-
-          <div className="footer-col">
-            <h4>Menu Highlights</h4>
-            <ul className="footer-links">
-              <li><Link href="/flavours">English Delight</Link></li>
-              <li><Link href="/flavours">Sharjah Shake</Link></li>
-              <li><Link href="/flavours">Royal Falooda</Link></li>
-              <li><Link href="/flavours">Pista Shake</Link></li>
-              <li><Link href="/flavours">Artisanal Ice Lollies</Link></li>
             </ul>
           </div>
 

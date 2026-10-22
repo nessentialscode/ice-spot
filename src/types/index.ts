@@ -19,7 +19,8 @@ export interface Flavour {
   ingredients?: string[];
 }
 
-export type Region = 'all' | 'thrissur' | 'ernakulam' | 'palakkad' | 'other';
+export type Region = 'all' | 'thrissur' | 'thrissur-town' | 'thrissur-coastal' | 'ernakulam' | 'palakkad' | 'malappuram' | 'other';
+export type SubRegion = 'town' | 'coastal';
 export type BranchStatus = 'factory' | 'confirmed' | 'candidate';
 
 export interface Branch {
@@ -28,12 +29,14 @@ export interface Branch {
   location: string;
   district: string;
   region: Region;
+  subRegion?: SubRegion;
   status: BranchStatus;
   isFactoryHeadquarters?: boolean;
   phone?: string;
   mapQuery?: string;
   highlights?: string[];
   timing?: string;
+  isOpen?: boolean;
 }
 
 export interface Review {

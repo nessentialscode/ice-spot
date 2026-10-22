@@ -195,18 +195,16 @@ function LoginForm() {
           <div className="h-1.5 w-full bg-gradient-to-r from-[#FF5E89] via-[#E22F62] to-[#BD1F49]" />
 
           <div className="px-6 py-7 sm:px-8 sm:py-8">
-            {/* Icespot Logo Emblem */}
-            <div className="flex justify-center mb-3">
-              <div className="w-16 h-16 rounded-2xl bg-white shadow-md shadow-rose-900/5 border border-rose-100/80 flex items-center justify-center p-2.5">
-                <Image
-                  src="/assets/icespot-logo-new.png"
-                  alt="Icespot Logo"
-                  width={68}
-                  height={34}
-                  priority
-                  className="w-full h-auto object-contain"
-                />
-              </div>
+            {/* Brand Logo - Direct transparent logo without background */}
+            <div className="flex justify-center mb-4">
+              <Image
+                src="/assets/icespot-brand-logo.png"
+                alt="YouBack Icespot"
+                width={160}
+                height={77}
+                priority
+                className="h-12 sm:h-14 w-auto object-contain"
+              />
             </div>
 
             {/* Portal Headline */}
