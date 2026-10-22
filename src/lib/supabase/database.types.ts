@@ -52,6 +52,7 @@ export interface Database {
           is_popular?: boolean
           created_at?: string
         }
+        Relationships: []
       }
       branches: {
         Row: {
@@ -90,6 +91,7 @@ export interface Database {
           map_query?: string | null
           created_at?: string
         }
+        Relationships: []
       }
       enquiries: {
         Row: {
@@ -125,6 +127,40 @@ export interface Database {
           created_at?: string
           status?: string
         }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          id: string
+          email: string | null
+          full_name: string | null
+          role: string
+          branch_id: string | null
+          is_active: boolean
+          created_at: string
+          updated_at: string | null
+        }
+        Insert: {
+          id: string
+          email?: string | null
+          full_name?: string | null
+          role?: string
+          branch_id?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          email?: string | null
+          full_name?: string | null
+          role?: string
+          branch_id?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
     }
     Views: {

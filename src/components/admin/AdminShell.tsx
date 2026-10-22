@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAdmin } from "@/context/AdminContext";
+import { createClient } from "@/lib/supabase/client";
 import {
   RotateCcw,
   ExternalLink,
@@ -76,7 +77,13 @@ export function AdminShell({
     showToast("Portal operational data refreshed", "info");
   };
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+    } catch {
+      // ignore
+    }
     if (typeof window !== "undefined") {
       try {
         localStorage.removeItem("icespot_auth_email");
@@ -85,6 +92,7 @@ export function AdminShell({
       }
     }
     router.push("/admin");
+    router.refresh();
   };
 
   return (

@@ -487,89 +487,52 @@ button {
 
 
 .decor-strawberry-top {
-
   top: 95px;
-
   left: max(20px, calc(50% - 620px));
-
   width: 100px;
-
   filter: blur(2px) drop-shadow(0 12px 20px rgba(0,0,0,0.25));
-
   animation: floatSubtle 7s ease-in-out infinite;
-
 }
-
-
 
 .decor-almonds-right {
-
   top: 260px;
-
   right: max(20px, calc(50% - 620px));
-
   width: 140px;
-
   filter: blur(1.5px) drop-shadow(0 12px 20px rgba(0,0,0,0.22));
-
   animation: floatReverse 8s ease-in-out infinite;
-
 }
-
-
 
 .decor-almonds-bottom-left {
-
   bottom: -20px;
-
   left: max(15px, calc(50% - 660px));
-
   width: 220px;
-
   z-index: 35;
-
   filter: drop-shadow(0 18px 25px rgba(60, 5, 20, 0.4));
-
   animation: floatSubtle 9s ease-in-out infinite 1s;
-
 }
-
-
 
 .decor-strawberry-bottom-right {
-
   bottom: -15px;
-
   right: max(20px, calc(50% - 620px));
-
   width: 165px;
-
   z-index: 35;
-
   filter: drop-shadow(0 18px 25px rgba(60, 5, 20, 0.4));
-
   animation: floatReverse 8.5s ease-in-out infinite 0.5s;
-
 }
-
-
 
 @keyframes floatSubtle {
-
   0%, 100% { transform: translateY(0px) rotate(0deg); }
-
   50% { transform: translateY(-10px) rotate(2deg); }
-
 }
 
-
-
 @keyframes floatReverse {
-
   0%, 100% { transform: translateY(0px) rotate(0deg); }
-
   50% { transform: translateY(12px) rotate(-2deg); }
+}
 
+/* Mobile-Only Flowing Fruits - Hidden on Desktop */
+.hero-mobile-flowing-fruits {
+  display: none;
 }
 
 
@@ -1270,6 +1233,132 @@ button {
 
     display: none;
 
+  }
+
+  /* Mobile-Only Flowing Subtle Fruits Aligned with Drip Divider */
+  .hero-mobile-flowing-fruits {
+    display: block;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 26;
+    overflow: visible;
+  }
+
+  .mobile-fruit-strawberry {
+    position: absolute;
+    bottom: 12px;
+    left: 8px;
+    width: 96px;
+    pointer-events: none;
+    z-index: 27;
+    filter: drop-shadow(0 10px 18px rgba(60, 5, 20, 0.45));
+    transform-origin: center bottom;
+    animation: fruitFlowStrawberry 6s ease-in-out infinite alternate;
+  }
+
+  .mobile-fruit-strawberry img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .mobile-fruit-kiwi {
+    position: absolute;
+    bottom: 8px;
+    right: -12px;
+    width: 95px;
+    pointer-events: none;
+    z-index: 27;
+    filter: drop-shadow(0 10px 18px rgba(60, 5, 20, 0.45));
+    transform-origin: center bottom;
+    animation: fruitFlowKiwi 6.5s ease-in-out infinite alternate;
+  }
+
+  .mobile-fruit-kiwi img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .mobile-fruit-drop {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.3) 50%, rgba(255, 180, 200, 0.4) 80%, rgba(255, 255, 255, 0.1) 100%);
+    box-shadow: inset 0 -1px 2px rgba(180, 20, 60, 0.3), 0 2px 5px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(1px);
+    pointer-events: none;
+    opacity: 0.85;
+  }
+
+  .mobile-fruit-drop.drop-1 {
+    width: 10px;
+    height: 10px;
+    left: 28px;
+    bottom: 65px;
+    animation: dropFloat 4.5s ease-in-out infinite;
+  }
+
+  .mobile-fruit-drop.drop-2 {
+    width: 8px;
+    height: 8px;
+    left: 80px;
+    bottom: 38px;
+    animation: dropFloat 5.2s ease-in-out infinite 0.8s;
+  }
+
+  .mobile-fruit-drop.drop-3 {
+    width: 10px;
+    height: 10px;
+    right: 76px;
+    bottom: 42px;
+    animation: dropFloat 5s ease-in-out infinite 0.4s;
+  }
+
+  .mobile-fruit-drop.drop-4 {
+    width: 8px;
+    height: 8px;
+    right: 22px;
+    bottom: 72px;
+    animation: dropFloat 5.8s ease-in-out infinite 1.5s;
+  }
+
+  @keyframes fruitFlowStrawberry {
+    0% {
+      transform: translateY(0px) rotate(-16deg) scale(1);
+    }
+    50% {
+      transform: translateY(-6px) rotate(-12deg) scale(1.02);
+    }
+    100% {
+      transform: translateY(3px) rotate(-18deg) scale(0.99);
+    }
+  }
+
+  @keyframes fruitFlowKiwi {
+    0% {
+      transform: translateY(0px) rotate(14deg) scale(1);
+    }
+    50% {
+      transform: translateY(-7px) rotate(18deg) scale(1.02);
+    }
+    100% {
+      transform: translateY(4px) rotate(11deg) scale(0.99);
+    }
+  }
+
+  @keyframes dropFloat {
+    0%, 100% {
+      transform: translateY(0px) scale(1);
+      opacity: 0.85;
+    }
+    50% {
+      transform: translateY(-6px) scale(1.08);
+      opacity: 0.95;
+    }
   }
 
 }

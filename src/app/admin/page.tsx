@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { useAdmin } from "@/context/AdminContext";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   Mail,
@@ -14,11 +13,14 @@ import {
   RotateCcw,
   AlertCircle
 } from "lucide-react";
-import { AdminRole } from "@/types/admin";
+import { createClient } from "@/lib/supabase/client";
+import { type UserProfile, getDashboardPathForRole } from "@/lib/supabase/auth-utils";
+import { useAdmin } from "@/context/AdminContext";
 
-export default function AdminLoginPage() {
+function LoginForm() {
   const router = useRouter();
-  const { setDemoRole, setDemoBranchId, setDemoDriverId, resetDemoData } = useAdmin();
+  const searchParams = useSearchParams();
+  const { resetDemoData } = useAdmin();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,14 +28,63 @@ export default function AdminLoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleSignIn = (e: React.FormEvent) => {
+  // Surface any redirect error codes safely
+  useEffect(() => {
+    const errorParam = searchParams.get("error");
+    if (errorParam === "profile_inactive") {
+      setErrorMessage("Your administrative profile has been deactivated. Please contact an administrator.");
+    } else if (errorParam === "profile_missing") {
+      setErrorMessage("No administrative profile was found for this user. Access denied.");
+    } else if (errorParam === "forbidden") {
+      setErrorMessage("You do not have permission to view that section.");
+    }
+  }, [searchParams]);
+
+  // Check if session is already active and redirect to appropriate dashboard
+  useEffect(() => {
+    let isMounted = true;
+    async function checkSession() {
+      try {
+        const supabase = createClient();
+        const {
+          data: { session }
+        } = await supabase.auth.getSession();
+
+        if (session?.user && isMounted) {
+          const { data: profileData } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", session.user.id)
+            .single();
+
+          const profile = profileData as UserProfile | null;
+
+          if (profile && profile.is_active) {
+            const target = getDashboardPathForRole(profile.role);
+            if (target) {
+              router.push(target);
+            }
+          }
+        }
+      } catch {
+        // Ignore initialization errors on mount
+      }
+    }
+
+    checkSession();
+    return () => {
+      isMounted = false;
+    };
+  }, [router]);
+
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
 
     const normalizedEmail = email.toLowerCase().trim();
 
     if (!normalizedEmail) {
-      setErrorMessage("Please enter your account email address.");
+      setErrorMessage("Please enter your administrator email address.");
       return;
     }
 
@@ -44,53 +95,73 @@ export default function AdminLoginPage() {
 
     setIsLoading(true);
 
-    // Save authorized user email for portal display
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.setItem("icespot_auth_email", normalizedEmail);
-      } catch {
-        // ignore localStorage errors
+    try {
+      const supabase = createClient();
+
+      // Real Supabase Auth sign-in
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password
+      });
+
+      if (authError || !authData.user) {
+        setErrorMessage(
+          authError?.message === "Invalid login credentials"
+            ? "Invalid email or password. Please verify your credentials."
+            : authError?.message || "Authentication failed. Please try again."
+        );
+        setIsLoading(false);
+        return;
       }
+
+      // Validate administrative profile from public.profiles
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", authData.user.id)
+        .single();
+
+      const profile = profileData as UserProfile | null;
+
+      if (profileError || !profile) {
+        await supabase.auth.signOut();
+        setErrorMessage("No authorized profile found for this account. Access denied.");
+        setIsLoading(false);
+        return;
+      }
+
+      if (!profile.is_active) {
+        await supabase.auth.signOut();
+        setErrorMessage("Your administrative account is deactivated. Please contact the factory administrator.");
+        setIsLoading(false);
+        return;
+      }
+
+      // Store verified display email
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("icespot_auth_email", authData.user.email || normalizedEmail);
+        } catch {
+          // ignore
+        }
+      }
+
+      // Resolve destination strictly from the database profile role
+      const targetDashboard = getDashboardPathForRole(profile.role);
+
+      if (!targetDashboard) {
+        await supabase.auth.signOut();
+        setErrorMessage("Your profile does not have an assigned admin dashboard role.");
+        setIsLoading(false);
+        return;
+      }
+
+      router.push(targetDashboard);
+      router.refresh();
+    } catch {
+      setErrorMessage("Unable to connect to authentication server. Please check your connection.");
+      setIsLoading(false);
     }
-
-    // Determine target portal section based on assigned credentials
-    let targetRole: AdminRole = "super-admin";
-    let targetPath = "/admin/super-admin";
-
-    if (
-      normalizedEmail.includes("staff") ||
-      normalizedEmail.includes("driver") ||
-      normalizedEmail.includes("delivery") ||
-      normalizedEmail.includes("transport") ||
-      normalizedEmail.includes("logistics")
-    ) {
-      targetRole = "delivery-staff";
-      targetPath = "/admin/delivery";
-      setDemoRole("delivery-staff");
-      setDemoDriverId("driver-1"); // Reefer Van 1
-    } else if (
-      normalizedEmail.includes("ollur") ||
-      normalizedEmail.includes("branch") ||
-      normalizedEmail.includes("franchise") ||
-      normalizedEmail.includes("store") ||
-      normalizedEmail.includes("parlour") ||
-      normalizedEmail.includes("chalakudy") ||
-      normalizedEmail.includes("thrissur")
-    ) {
-      targetRole = "branch-admin";
-      targetPath = "/admin/branch";
-      setDemoRole("branch-admin");
-      setDemoBranchId("branch-13"); // Ollur Franchise Parlour
-    } else {
-      // Super Admin (default for admin, super, factory, operations, or owner credentials)
-      targetRole = "super-admin";
-      targetPath = "/admin/super-admin";
-      setDemoRole("super-admin");
-    }
-
-    setTimeout(() => {
-      router.push(targetPath);
-    }, 200);
   };
 
   return (
@@ -175,6 +246,7 @@ export default function AdminLoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="admin@icespot.com"
+                    autoComplete="email"
                     className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-800 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:border-[#E22F62] focus:ring-4 focus:ring-[#E22F62]/10 transition-all shadow-sm"
                   />
                 </div>
@@ -199,6 +271,7 @@ export default function AdminLoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••••••"
+                    autoComplete="current-password"
                     className="w-full pl-10 pr-11 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-800 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:border-[#E22F62] focus:ring-4 focus:ring-[#E22F62]/10 transition-all shadow-sm tracking-normal"
                   />
                   <button
@@ -222,7 +295,7 @@ export default function AdminLoginPage() {
                 disabled={isLoading}
                 className="w-full !mt-5 py-3 px-4 bg-[#0F172A] hover:bg-[#1E293B] text-white text-sm font-bold rounded-xl shadow-md transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99] disabled:opacity-75"
               >
-                <span>{isLoading ? "Signing In..." : "Sign In to Admin Portal"}</span>
+                <span>{isLoading ? "Verifying Credentials..." : "Sign In to Admin Portal"}</span>
               </button>
             </form>
 
@@ -240,5 +313,13 @@ export default function AdminLoginPage() {
         &copy; 2026 Youback Icespot Factory &bull; Varavoor, Thrissur, Kerala
       </footer>
     </div>
+  );
+}
+
+export default function AdminLoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#FFF5F7]" />}>
+      <LoginForm />
+    </Suspense>
   );
 }

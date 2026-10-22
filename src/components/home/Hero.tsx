@@ -10,7 +10,7 @@ export default function Hero() {
         Icespot
       </div>
 
-      {/* Floating Decorative Objects with Depth of Field */}
+      {/* Floating Decorative Objects with Depth of Field (Desktop) */}
       <div className="floating-decor decor-strawberry-top" aria-hidden="true">
         <Image
           src="/assets/floating-strawberry.png"
@@ -49,6 +49,32 @@ export default function Hero() {
           height={170}
           priority
         />
+      </div>
+
+      {/* Mobile-Only Flowing Subtle Fruits Aligned with Drip Divider */}
+      <div className="hero-mobile-flowing-fruits" aria-hidden="true">
+        <div className="mobile-fruit-strawberry">
+          <Image
+            src="/assets/floating-strawberry-slice.png"
+            alt=""
+            width={160}
+            height={160}
+            priority
+          />
+        </div>
+        <div className="mobile-fruit-kiwi">
+          <Image
+            src="/assets/floating-kiwi-slice.png"
+            alt=""
+            width={160}
+            height={160}
+            priority
+          />
+        </div>
+        <span className="mobile-fruit-drop drop-1" />
+        <span className="mobile-fruit-drop drop-2" />
+        <span className="mobile-fruit-drop drop-3" />
+        <span className="mobile-fruit-drop drop-4" />
       </div>
 
       {/* Ten Ice Cream Sticks Circular Attraction */}
