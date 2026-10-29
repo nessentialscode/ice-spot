@@ -6,7 +6,9 @@ import {
   DispatchBatch,
   AdminUserAccount,
   DiscrepancyReport,
-  InventoryAdjustmentLog
+  InventoryAdjustmentLog,
+  Invoice,
+  FleetVehicle
 } from "@/types/admin";
 
 export const INITIAL_ADMIN_PRODUCTS: AdminProduct[] = [
@@ -57,512 +59,15 @@ export const INITIAL_ADMIN_PRODUCTS: AdminProduct[] = [
   }
 ];
 
-export const INITIAL_ADMIN_ORDERS: AdminOrder[] = [
-  {
-    id: "ord-104",
-    orderNumber: "ORD-2026-104",
-    branchId: "ollur-branch",
-    branchName: "Ice Spot Ollur",
-    district: "Thrissur",
-    submittedAt: "2026-10-20 09:30 AM",
-    requestedDeliveryDate: "2026-10-22",
-    status: "submitted",
-    totalUnitsRequested: 384, // 16 packs * 24
-    totalUnitsApproved: 0,
-    branchNotes: "Please deliver before 11 AM due to local festival rush on Thursday.",
-    timeline: [
-      {
-        id: "tl-104-1",
-        timestamp: "2026-10-20 09:30 AM",
-        status: "submitted",
-        actorName: "Rahul Varma",
-        actorRole: "Branch Admin",
-        note: "Weekly branch order created and submitted for factory review"
-      }
-    ],
-    items: [
-      {
-        productId: "strawberry",
-        productName: "Sweet Strawberry",
-        sku: "SKU-STK-001",
-        packType: "Crate (24 Sticks)",
-        requestedPacks: 4,
-        requestedUnits: 96,
-        approvedPacks: 0,
-        approvedUnits: 0
-      },
-      {
-        productId: "mango",
-        productName: "Alphonso Mango",
-        sku: "SKU-STK-003",
-        packType: "Crate (24 Sticks)",
-        requestedPacks: 6,
-        requestedUnits: 144,
-        approvedPacks: 0,
-        approvedUnits: 0
-      },
-      {
-        productId: "tender-coconut",
-        productName: "Tender Coconut Special",
-        sku: "SKU-STK-005",
-        packType: "Crate (24 Sticks)",
-        requestedPacks: 4,
-        requestedUnits: 96,
-        approvedPacks: 0,
-        approvedUnits: 0
-      },
-      {
-        productId: "jackfruit",
-        productName: "Varikka Chakka Honey",
-        sku: "SKU-STK-004",
-        packType: "Crate (24 Sticks)",
-        requestedPacks: 2,
-        requestedUnits: 48,
-        approvedPacks: 0,
-        approvedUnits: 0
-      }
-    ]
-  },
-  {
-    id: "ord-103",
-    orderNumber: "ORD-2026-103",
-    branchId: "thrissur-town",
-    branchName: "Ice Spot Thrissur Town",
-    district: "Thrissur",
-    submittedAt: "2026-10-19 04:15 PM",
-    requestedDeliveryDate: "2026-10-21",
-    status: "under-review",
-    totalUnitsRequested: 480,
-    totalUnitsApproved: 0,
-    branchNotes: "Weekend replenishment. Please include promotional shelf stickers if available.",
-    timeline: [
-      {
-        id: "tl-103-1",
-        timestamp: "2026-10-19 04:15 PM",
-        status: "submitted",
-        actorName: "Sreelakshmi P.",
-        actorRole: "Branch Admin",
-        note: "Submitted weekly order"
-      },
-      {
-        id: "tl-103-2",
-        timestamp: "2026-10-20 08:00 AM",
-        status: "under-review",
-        actorName: "M. Faizal",
-        actorRole: "Super Admin",
-        note: "Reviewing factory stock allocation"
-      }
-    ],
-    items: [
-      {
-        productId: "mango",
-        productName: "Alphonso Mango",
-        sku: "SKU-STK-003",
-        packType: "Crate (24 Sticks)",
-        requestedPacks: 8,
-        requestedUnits: 192,
-        approvedPacks: 0,
-        approvedUnits: 0
-      },
-      {
-        productId: "pistachio",
-        productName: "Pista Malai Kulfi",
-        sku: "SKU-STK-006",
-        packType: "Crate (24 Sticks)",
-        requestedPacks: 5,
-        requestedUnits: 120,
-        approvedPacks: 0,
-        approvedUnits: 0
-      },
-      {
-        productId: "belgian-chocolate",
-        productName: "Belgian Dark Crunch",
-        sku: "SKU-STK-007",
-        packType: "Crate (24 Sticks)",
-        requestedPacks: 7,
-        requestedUnits: 168,
-        approvedPacks: 0,
-        approvedUnits: 0
-      }
-    ]
-  },
-  {
-    id: "ord-102",
-    orderNumber: "ORD-2026-102",
-    branchId: "chalakudy-junction",
-    branchName: "Ice Spot Chalakudy",
-    district: "Thrissur",
-    submittedAt: "2026-10-18 11:20 AM",
-    requestedDeliveryDate: "2026-10-21",
-    status: "approved",
-    totalUnitsRequested: 360,
-    totalUnitsApproved: 360,
-    factoryNotes: "Full quantity approved. Assigned to batch DSP-VRV-090 for Wednesday morning dispatch.",
-    timeline: [
-      {
-        id: "tl-102-1",
-        timestamp: "2026-10-18 11:20 AM",
-        status: "submitted",
-        actorName: "Arun Nair",
-        actorRole: "Branch Admin",
-        note: "Submitted regular order"
-      },
-      {
-        id: "tl-102-2",
-        timestamp: "2026-10-18 02:40 PM",
-        status: "approved",
-        actorName: "M. Faizal",
-        actorRole: "Super Admin",
-        note: "Approved in full. Stock reserved at Varavoor Cold Room 2"
-      }
-    ],
-    items: [
-      {
-        productId: "strawberry",
-        productName: "Sweet Strawberry",
-        sku: "SKU-STK-001",
-        packType: "Crate (24 Sticks)",
-        requestedPacks: 5,
-        requestedUnits: 120,
-        approvedPacks: 5,
-        approvedUnits: 120
-      },
-      {
-        productId: "passion-fruit",
-        productName: "Wild Passion Fruit",
-        sku: "SKU-STK-008",
-        packType: "Crate (24 Sticks)",
-        requestedPacks: 5,
-        requestedUnits: 120,
-        approvedPacks: 5,
-        approvedUnits: 120
-      },
-      {
-        productId: "tender-coconut",
-        productName: "Tender Coconut Special",
-        sku: "SKU-STK-005",
-        packType: "Crate (24 Sticks)",
-        requestedPacks: 5,
-        requestedUnits: 120,
-        approvedPacks: 5,
-        approvedUnits: 120
-      }
-    ]
-  },
-  {
-    id: "ord-101",
-    orderNumber: "ORD-2026-101",
-    branchId: "kuriachira-branch",
-    branchName: "Ice Spot Kuriachira",
-    district: "Thrissur",
-    submittedAt: "2026-10-17 01:10 PM",
-    requestedDeliveryDate: "2026-10-20",
-    status: "dispatched",
-    totalUnitsRequested: 240,
-    totalUnitsApproved: 240,
-    assignedDispatchId: "dsp-089",
-    factoryNotes: "Loaded in Reefer Van KL-08-AX-4412",
-    timeline: [
-      {
-        id: "tl-101-1",
-        timestamp: "2026-10-17 01:10 PM",
-        status: "submitted",
-        actorName: "Geetha C.",
-        actorRole: "Branch Admin",
-        note: "Order submitted"
-      },
-      {
-        id: "tl-101-2",
-        timestamp: "2026-10-18 10:00 AM",
-        status: "approved",
-        actorName: "M. Faizal",
-        actorRole: "Super Admin",
-        note: "Approved for Monday route"
-      },
-      {
-        id: "tl-101-3",
-        timestamp: "2026-10-20 07:45 AM",
-        status: "dispatched",
-        actorName: "Suresh K.",
-        actorRole: "Delivery Staff",
-        note: "Loaded and departed Varavoor Factory"
-      }
-    ],
-    items: [
-      {
-        productId: "guava",
-        productName: "Creamy Guava & Mint",
-        sku: "SKU-STK-002",
-        packType: "Crate (24 Sticks)",
-        requestedPacks: 4,
-        requestedUnits: 96,
-        approvedPacks: 4,
-        approvedUnits: 96,
-        packedUnits: 96
-      },
-      {
-        productId: "mango",
-        productName: "Alphonso Mango",
-        sku: "SKU-STK-003",
-        packType: "Crate (24 Sticks)",
-        requestedPacks: 6,
-        requestedUnits: 144,
-        approvedPacks: 6,
-        approvedUnits: 144,
-        packedUnits: 144
-      }
-    ]
-  },
-  {
-    id: "ord-098",
-    orderNumber: "ORD-2026-098",
-    branchId: "palakkad-fort-road",
-    branchName: "Ice Spot Palakkad Town",
-    district: "Palakkad",
-    submittedAt: "2026-10-15 10:00 AM",
-    requestedDeliveryDate: "2026-10-18",
-    status: "delivered",
-    totalUnitsRequested: 312,
-    totalUnitsApproved: 312,
-    factoryNotes: "Delivery fulfilled. Pending branch confirmation receipt check.",
-    timeline: [
-      {
-        id: "tl-098-1",
-        timestamp: "2026-10-15 10:00 AM",
-        status: "submitted",
-        actorName: "Manoj K.",
-        actorRole: "Branch Admin",
-        note: "Weekly branch requisition"
-      },
-      {
-        id: "tl-098-2",
-        timestamp: "2026-10-16 11:30 AM",
-        status: "approved",
-        actorName: "M. Faizal",
-        actorRole: "Super Admin",
-        note: "Approved"
-      },
-      {
-        id: "tl-098-3",
-        timestamp: "2026-10-18 01:15 PM",
-        status: "delivered",
-        actorName: "Rajesh Menon",
-        actorRole: "Delivery Staff",
-        note: "Delivered to branch freezer bay. Awaiting branch staff verification."
-      }
-    ],
-    items: [
-      {
-        productId: "badam",
-        productName: "Badam Pista Shahi",
-        sku: "SKU-STK-009",
-        packType: "Crate (24 Sticks)",
-        requestedPacks: 7,
-        requestedUnits: 168,
-        approvedPacks: 7,
-        approvedUnits: 168,
-        packedUnits: 168,
-        receivedUnits: 168
-      },
-      {
-        productId: "kulukki",
-        productName: "Malabar Kulukki Pop",
-        sku: "SKU-STK-010",
-        packType: "Crate (24 Sticks)",
-        requestedPacks: 6,
-        requestedUnits: 144,
-        approvedPacks: 6,
-        approvedUnits: 144,
-        packedUnits: 144,
-        receivedUnits: 144
-      }
-    ]
-  },
-  {
-    id: "ord-095",
-    orderNumber: "ORD-2026-095",
-    branchId: "guruvayur-temple",
-    branchName: "Ice Spot Guruvayur",
-    district: "Thrissur",
-    submittedAt: "2026-10-14 02:00 PM",
-    requestedDeliveryDate: "2026-10-17",
-    status: "amendment-requested",
-    totalUnitsRequested: 240,
-    totalUnitsApproved: 240,
-    amendmentNotes: "URGENT: Requesting +2 additional Crates of Alphonso Mango and +1 Crate of Badam Pista due to surprise bus tour booking.",
-    timeline: [
-      {
-        id: "tl-095-1",
-        timestamp: "2026-10-14 02:00 PM",
-        status: "submitted",
-        actorName: "Deepak S.",
-        actorRole: "Branch Admin",
-        note: "Original order submitted"
-      },
-      {
-        id: "tl-095-2",
-        timestamp: "2026-10-15 09:30 AM",
-        status: "approved",
-        actorName: "M. Faizal",
-        actorRole: "Super Admin",
-        note: "Order approved"
-      },
-      {
-        id: "tl-095-3",
-        timestamp: "2026-10-16 11:20 AM",
-        status: "amendment-requested",
-        actorName: "Deepak S.",
-        actorRole: "Branch Admin",
-        note: "Branch submitted amendment request for additional crates"
-      }
-    ],
-    items: [
-      {
-        productId: "mango",
-        productName: "Alphonso Mango",
-        sku: "SKU-STK-003",
-        packType: "Crate (24 Sticks)",
-        requestedPacks: 6,
-        requestedUnits: 144,
-        approvedPacks: 6,
-        approvedUnits: 144
-      },
-      {
-        productId: "badam",
-        productName: "Badam Pista Shahi",
-        sku: "SKU-STK-009",
-        packType: "Crate (24 Sticks)",
-        requestedPacks: 4,
-        requestedUnits: 96,
-        approvedPacks: 4,
-        approvedUnits: 96
-      }
-    ]
-  }
-];
+export const INITIAL_ADMIN_ORDERS: AdminOrder[] = [];
 
-export const INITIAL_DISPATCH_BATCHES: DispatchBatch[] = [
-  {
-    id: "dsp-089",
-    manifestNumber: "DSP-VRV-089",
-    vehicleNumber: "KL-08-AX-4412 (Insulated Reefer Van)",
-    driverId: "usr-del-1",
-    driverName: "Suresh K.",
-    driverPhone: "+91 98460 11223",
-    dispatchDate: "2026-10-20",
-    status: "in-transit",
-    orderIds: ["ord-101"],
-    totalUnits: 240,
-    departedAt: "2026-10-20 07:45 AM",
-    notes: "South Thrissur route: Wadakkanchery -> Thrissur Bypass -> Kuriachira",
-    stops: [
-      {
-        id: "stop-089-1",
-        orderId: "ord-101",
-        orderNumber: "ORD-2026-101",
-        branchId: "kuriachira-branch",
-        branchName: "Ice Spot Kuriachira",
-        district: "Thrissur",
-        address: "Kuriachira Junction, Main Road, Thrissur, Kerala 680006",
-        phone: "+91 94470 00004",
-        sequence: 1,
-        status: "in-transit",
-        items: [
-          {
-            productId: "guava",
-            productName: "Creamy Guava & Mint",
-            sku: "SKU-STK-002",
-            packType: "Crate (24 Sticks)",
-            requestedPacks: 4,
-            requestedUnits: 96,
-            approvedPacks: 4,
-            approvedUnits: 96,
-            packedUnits: 96
-          },
-          {
-            productId: "mango",
-            productName: "Alphonso Mango",
-            sku: "SKU-STK-003",
-            packType: "Crate (24 Sticks)",
-            requestedPacks: 6,
-            requestedUnits: 144,
-            approvedPacks: 6,
-            approvedUnits: 144,
-            packedUnits: 144
-          }
-        ]
-      }
-    ]
-  },
-  {
-    id: "dsp-090",
-    manifestNumber: "DSP-VRV-090",
-    vehicleNumber: "KL-08-BY-8821 (Refrigerated Truck)",
-    driverId: "usr-del-2",
-    driverName: "Rajesh Menon",
-    driverPhone: "+91 98471 44556",
-    dispatchDate: "2026-10-21",
-    status: "loading",
-    orderIds: ["ord-102"],
-    totalUnits: 360,
-    notes: "Central Highway Route: Varavoor -> Amballur -> Chalakudy Junction",
-    stops: [
-      {
-        id: "stop-090-1",
-        orderId: "ord-102",
-        orderNumber: "ORD-2026-102",
-        branchId: "chalakudy-junction",
-        branchName: "Ice Spot Chalakudy",
-        district: "Thrissur",
-        address: "South Junction, NH 544, Chalakudy, Thrissur, Kerala",
-        phone: "+91 94470 00007",
-        sequence: 1,
-        status: "pending",
-        items: [
-          {
-            productId: "strawberry",
-            productName: "Sweet Strawberry",
-            sku: "SKU-STK-001",
-            packType: "Crate (24 Sticks)",
-            requestedPacks: 5,
-            requestedUnits: 120,
-            approvedPacks: 5,
-            approvedUnits: 120,
-            packedUnits: 120
-          },
-          {
-            productId: "passion-fruit",
-            productName: "Wild Passion Fruit",
-            sku: "SKU-STK-008",
-            packType: "Crate (24 Sticks)",
-            requestedPacks: 5,
-            requestedUnits: 120,
-            approvedPacks: 5,
-            approvedUnits: 120,
-            packedUnits: 120
-          },
-          {
-            productId: "tender-coconut",
-            productName: "Tender Coconut Special",
-            sku: "SKU-STK-005",
-            packType: "Crate (24 Sticks)",
-            requestedPacks: 5,
-            requestedUnits: 120,
-            approvedPacks: 5,
-            approvedUnits: 120,
-            packedUnits: 120
-          }
-        ]
-      }
-    ]
-  }
-];
+export const INITIAL_DISPATCH_BATCHES: DispatchBatch[] = [];
 
 export const INITIAL_ADMIN_USERS: AdminUserAccount[] = [
   {
-    id: "usr-sup-1",
-    name: "M. Faizal",
-    email: "faizal.operations@icespot.in",
+    id: "2236f15a-bba8-48ba-bd23-764380fb7cba",
+    name: "Varavoor Factory Operations",
+    email: "icespotvaravoor@gmail.com",
     role: "super-admin",
     branchId: "varavoor-factory",
     branchName: "Varavoor Central Factory",
@@ -571,15 +76,24 @@ export const INITIAL_ADMIN_USERS: AdminUserAccount[] = [
     phone: "+91 94470 00101"
   },
   {
-    id: "usr-br-1",
-    name: "Rahul Varma",
-    email: "rahul.ollur@icespot.in",
+    id: "99fce41f-a636-419f-855d-9f23db4769fb",
+    name: "Thrissur Ollur Branch Admin",
+    email: "icespotthrissur@gmail.com",
     role: "branch-admin",
     branchId: "ollur-branch",
     branchName: "Ice Spot Ollur",
     status: "active",
-    lastActive: "15 mins ago",
+    lastActive: "Just now",
     phone: "+91 94470 00002"
+  },
+  {
+    id: "cb3c5a34-ce3b-4a53-ae6e-7a18ff6f4f43",
+    name: "Icespot Logistics & Delivery Staff",
+    email: "icespotstaff@gmail.com",
+    role: "delivery-staff",
+    status: "active",
+    lastActive: "Just now",
+    phone: "+91 98460 11223"
   },
   {
     id: "usr-br-2",
@@ -602,24 +116,6 @@ export const INITIAL_ADMIN_USERS: AdminUserAccount[] = [
     status: "active",
     lastActive: "Yesterday",
     phone: "+91 94470 00007"
-  },
-  {
-    id: "usr-del-1",
-    name: "Suresh K.",
-    email: "suresh.logistics@icespot.in",
-    role: "delivery-staff",
-    status: "active",
-    lastActive: "5 mins ago",
-    phone: "+91 98460 11223"
-  },
-  {
-    id: "usr-del-2",
-    name: "Rajesh Menon",
-    email: "rajesh.transport@icespot.in",
-    role: "delivery-staff",
-    status: "active",
-    lastActive: "35 mins ago",
-    phone: "+91 98471 44556"
   }
 ];
 
@@ -677,4 +173,62 @@ export const INITIAL_INVENTORY_LOGS: InventoryAdjustmentLog[] = [
     reason: "Dispatch Fulfillment",
     actorName: "Dispatch Bay - DSP-089"
   }
+];
+
+export const INITIAL_ADMIN_INVOICES: Invoice[] = [
+  {
+    id: "inv-10001",
+    invoiceNumber: "INV-2026-10001",
+    orderId: "ord-102",
+    orderNumber: "ORD-2026-102",
+    branchId: "chalakudy-junction",
+    branchName: "Ice Spot Chalakudy",
+    branchCode: "BR-CLK-008",
+    branchAddress: "Junction, Tramway Lane, Chalakudy, Thrissur district",
+    branchPhone: "+91 94470 00007",
+    district: "Thrissur",
+    invoiceDate: "2026-10-21",
+    subtotal: 5800.00,
+    taxRate: 0.00,
+    taxAmount: 0.00,
+    grandTotal: 5800.00,
+    status: "provisional",
+    notes: "PROVISIONAL COMMERCIAL INVOICE — GST not calculated; tax configuration pending confirmation.",
+    createdAt: "2026-10-21T08:30:00Z",
+    items: [
+      {
+        productId: "mango",
+        productName: "Alphonso Mango",
+        sku: "SKU-STK-003",
+        quantity: 8,
+        unitPrice: 400.00,
+        lineTotal: 3200.00
+      },
+      {
+        productId: "strawberry",
+        productName: "Sweet Strawberry",
+        sku: "SKU-STK-001",
+        quantity: 5,
+        unitPrice: 360.00,
+        lineTotal: 1800.00
+      },
+      {
+        productId: "guava",
+        productName: "Creamy Guava & Mint",
+        sku: "SKU-STK-002",
+        quantity: 2,
+        unitPrice: 400.00,
+        lineTotal: 800.00
+      }
+    ]
+  }
+];
+
+export const INITIAL_FLEET_VEHICLES: FleetVehicle[] = [
+  { id: "veh-1", registrationNumber: "KL-08-AX-4412", modelOrType: "Insulated Reefer Van", capacityCrates: 24, status: "available" },
+  { id: "veh-2", registrationNumber: "KL-08-BY-8821", modelOrType: "Refrigerated Truck", capacityCrates: 40, status: "available" },
+  { id: "veh-3", registrationNumber: "KL-48-Q-4102", modelOrType: "Express Reefer Van", capacityCrates: 20, status: "available" },
+  { id: "veh-4", registrationNumber: "KL-08-CZ-9910", modelOrType: "Cold-Chain Reefer #04", capacityCrates: 24, status: "available" },
+  { id: "veh-5", registrationNumber: "KL-08-DF-1044", modelOrType: "Deep-Freeze Cargo Van", capacityCrates: 18, status: "available" },
+  { id: "veh-6", registrationNumber: "KL-48-M-7703", modelOrType: "Refrigerated Medium Truck", capacityCrates: 36, status: "available" },
 ];

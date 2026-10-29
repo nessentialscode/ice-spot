@@ -23,6 +23,7 @@ export type DeliveryTripStatus =
 
 export type StopDeliveryStatus =
   | 'pending'
+  | 'scheduled'
   | 'in-transit'
   | 'reached'
   | 'delivered'
@@ -75,6 +76,8 @@ export interface AdminOrder {
   orderNumber: string; // e.g. "ORD-2026-101"
   branchId: string;
   branchName: string;
+  branchCode?: string;
+  destinationFactory?: string;
   district: string;
   submittedAt: string;
   requestedDeliveryDate: string;
@@ -117,6 +120,8 @@ export interface DispatchBatch {
   driverName: string;
   driverPhone: string;
   dispatchDate: string;
+  departureTime?: string;
+  loadingBay?: string;
   status: DeliveryTripStatus;
   orderIds: string[];
   stops: DispatchStop[];
@@ -124,6 +129,46 @@ export interface DispatchBatch {
   notes?: string;
   departedAt?: string;
   completedAt?: string;
+}
+
+export interface FleetVehicle {
+  id: string;
+  registrationNumber: string;
+  modelOrType: string;
+  capacityCrates: number;
+  status: "available" | "in-service" | "maintenance";
+}
+
+export interface InvoiceItem {
+  id?: string;
+  productId: string;
+  productName: string;
+  sku: string;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
+}
+
+export interface Invoice {
+  id: string;
+  invoiceNumber: string; // e.g. "INV-2026-10001"
+  orderId: string;
+  orderNumber: string;
+  branchId: string;
+  branchName: string;
+  branchCode?: string;
+  branchAddress?: string;
+  branchPhone?: string;
+  district?: string;
+  invoiceDate: string;
+  subtotal: number;
+  taxRate: number; // 0.00 if unconfigured
+  taxAmount: number; // 0.00
+  grandTotal: number;
+  status: 'provisional' | 'issued' | 'paid' | 'cancelled';
+  items: InvoiceItem[];
+  notes?: string;
+  createdAt?: string;
 }
 
 export interface AdminUserAccount {

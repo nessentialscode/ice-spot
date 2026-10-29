@@ -1,10 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
-import { AdminOrder, OrderItem } from "@/types/admin";
+import { AdminOrder, OrderItem, Invoice } from "@/types/admin";
 import { useAdmin } from "@/context/AdminContext";
 import { StatusBadge } from "./StatusBadge";
 import { PrintablePackingSlip } from "./PrintablePackingSlip";
+import { InvoiceModal } from "./InvoiceModal";
+import { getInvoiceForOrderAction } from "@/lib/actions/invoices";
+import { INITIAL_ADMIN_INVOICES } from "@/lib/data/adminMockData";
 import {
   X,
   CheckCircle2,
@@ -16,19 +19,22 @@ import {
   Building2,
   Calendar,
   FileText,
-  Boxes
+  Boxes,
+  Loader2
 } from "lucide-react";
 
 interface OrderDetailModalProps {
   order: AdminOrder | null;
   onClose: () => void;
   onOpenReceiveModal?: (order: AdminOrder) => void;
+  userRole?: string;
 }
 
 export function OrderDetailModal({
   order,
   onClose,
-  onOpenReceiveModal
+  onOpenReceiveModal,
+  userRole
 }: OrderDetailModalProps) {
   const {
     demoRole,
@@ -59,10 +65,20 @@ export function OrderDetailModal({
     "none" | "reject" | "correct" | "cancel" | "amendment" | "print"
   >("none");
 
+  // Commercial Invoice state
+  const [invoiceData, setInvoiceData] = useState<Invoice | null>(null);
+  const [isInvoiceLoading, setIsInvoiceLoading] = useState(false);
+  const [invoiceError, setInvoiceError] = useState<string | null>(null);
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+
+  // Action submission & error states
+  const [isActionSubmitting, setIsActionSubmitting] = useState(false);
+  const [modalActionError, setModalActionError] = useState<string | null>(null);
+
   if (!order) return null;
 
-  const isSuperAdmin = demoRole === "super-admin";
-  const isBranchAdmin = demoRole === "branch-admin";
+  const isSuperAdmin = userRole ? userRole.toLowerCase().includes("super") : demoRole === "super-admin";
+  const isBranchAdmin = userRole ? userRole.toLowerCase().includes("branch") : demoRole === "branch-admin";
   const isPendingReview = order.status === "submitted" || order.status === "under-review";
   const isApprovedLocked =
     order.status === "approved" ||
@@ -70,11 +86,50 @@ export function OrderDetailModal({
     order.status === "ready-for-dispatch" ||
     order.status === "dispatched";
 
+  const isInvoiceEligible =
+    order.status === "approved" ||
+    order.status === "preparation" ||
+    order.status === "ready-for-dispatch" ||
+    order.status === "dispatched" ||
+    order.status === "delivered" ||
+    order.status === "partially-delivered";
+
+  const handleOpenInvoice = async () => {
+    setIsInvoiceLoading(true);
+    setInvoiceError(null);
+    try {
+      const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (UUID_REGEX.test(order.id)) {
+        const res = await getInvoiceForOrderAction(order.id);
+        if (res.success && res.data) {
+          setInvoiceData(res.data);
+          setIsInvoiceModalOpen(true);
+          return;
+        }
+      }
+
+      // Fallback for prototype / seeded demo orders
+      const fallbackInv = INITIAL_ADMIN_INVOICES.find(
+        (inv) => inv.orderId === order.id || inv.orderNumber === order.orderNumber
+      );
+      if (fallbackInv) {
+        setInvoiceData(fallbackInv);
+        setIsInvoiceModalOpen(true);
+      } else {
+        setInvoiceError("Commercial invoice not available for this order.");
+      }
+    } catch (err: any) {
+      setInvoiceError(err.message || "Failed to retrieve invoice. Please check your connection.");
+    } finally {
+      setIsInvoiceLoading(false);
+    }
+  };
+
   // Calculate total units being approved
   const totalApprovedUnits = order.items.reduce((sum, item) => {
     const packs = approvedPacksMap[item.productId] ?? item.requestedPacks;
     const prod = products.find((p) => p.id === item.productId);
-    return sum + packs * (prod?.unitsPerPack || 24);
+    return sum + packs * (prod?.unitsPerPack || 10);
   }, 0);
 
   const handleApprove = () => {
@@ -82,34 +137,73 @@ export function OrderDetailModal({
     onClose();
   };
 
-  const handleRejectConfirm = () => {
+  const handleRejectConfirm = async () => {
+    if (isActionSubmitting) return;
     if (!rejectReasonInput.trim()) {
-      alert("Please provide a reason for order rejection.");
+      setModalActionError("Please provide a reason for order rejection.");
       return;
     }
-    rejectOrder(order.id, rejectReasonInput);
-    setActiveActionModal("none");
-    onClose();
+    setModalActionError(null);
+    setIsActionSubmitting(true);
+    try {
+      const res = await rejectOrder(order.id, rejectReasonInput.trim());
+      if (res && res.success) {
+        setActiveActionModal("none");
+        onClose();
+      } else {
+        setModalActionError(res?.message || "Failed to reject order.");
+      }
+    } catch (err: any) {
+      setModalActionError(err?.message || "An unexpected error occurred while rejecting order.");
+    } finally {
+      setIsActionSubmitting(false);
+    }
   };
 
-  const handleCorrectionConfirm = () => {
+  const handleCorrectionConfirm = async () => {
+    if (isActionSubmitting) return;
     if (!correctionNoteInput.trim()) {
-      alert("Please provide feedback for correction.");
+      setModalActionError("Please provide feedback for correction.");
       return;
     }
-    returnOrderForCorrection(order.id, correctionNoteInput);
-    setActiveActionModal("none");
-    onClose();
+    setModalActionError(null);
+    setIsActionSubmitting(true);
+    try {
+      const res = await returnOrderForCorrection(order.id, correctionNoteInput.trim());
+      if (res && res.success) {
+        setActiveActionModal("none");
+        onClose();
+      } else {
+        setModalActionError(res?.message || "Failed to return order for correction.");
+      }
+    } catch (err: any) {
+      setModalActionError(err?.message || "An unexpected error occurred while returning order for correction.");
+    } finally {
+      setIsActionSubmitting(false);
+    }
   };
 
-  const handleCancelConfirm = () => {
+  const handleCancelConfirm = async () => {
+    if (isActionSubmitting) return;
     if (!rejectReasonInput.trim()) {
-      alert("Please enter cancellation reason.");
+      setModalActionError("Please enter cancellation reason.");
       return;
     }
-    cancelOrder(order.id, rejectReasonInput);
-    setActiveActionModal("none");
-    onClose();
+    setModalActionError(null);
+    setIsActionSubmitting(true);
+    try {
+      const res = await cancelOrder(order.id, rejectReasonInput.trim());
+      if (res && res.success) {
+        setActiveActionModal("none");
+        onClose();
+      } else {
+        setModalActionError(res?.message || "Failed to cancel order.");
+      }
+    } catch (err: any) {
+      setModalActionError(err?.message || "An unexpected error occurred while cancelling order.");
+    } finally {
+      setIsActionSubmitting(false);
+    }
   };
 
   const handleAmendmentSubmit = () => {
@@ -150,6 +244,17 @@ export function OrderDetailModal({
             </div>
 
             <div className="flex items-center gap-2">
+              {isInvoiceEligible && (
+                <button
+                  onClick={handleOpenInvoice}
+                  disabled={isInvoiceLoading}
+                  type="button"
+                  className="p-2 rounded-xl text-[#D83162] hover:bg-rose-50 border border-rose-200 transition-colors cursor-pointer disabled:opacity-50"
+                  title="View Commercial Invoice"
+                >
+                  <FileText className="w-4 h-4" />
+                </button>
+              )}
               <button
                 onClick={() => setActiveActionModal("print")}
                 className="p-2 rounded-xl text-slate-600 hover:bg-slate-200/60 border border-slate-200 transition-colors"
@@ -168,6 +273,23 @@ export function OrderDetailModal({
 
           {/* Modal Body */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            {/* Invoice Error Alert */}
+            {invoiceError && (
+              <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-xs flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                  <span>{invoiceError}</span>
+                </div>
+                <button
+                  onClick={() => setInvoiceError(null)}
+                  type="button"
+                  className="text-rose-400 hover:text-rose-700 text-xs px-1 cursor-pointer font-bold"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
             {/* Status Guidance Banner */}
             {order.status === "submitted" && (
               <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-3">
@@ -270,7 +392,7 @@ export function OrderDetailModal({
                     {order.items.map((it) => {
                       const prod = products.find((p) => p.id === it.productId);
                       const currentPacks = approvedPacksMap[it.productId] ?? it.requestedPacks;
-                      const unitsPerPack = prod?.unitsPerPack || 24;
+                      const unitsPerPack = prod?.unitsPerPack || 10;
                       const hasLowStock = prod ? prod.currentStock < currentPacks * unitsPerPack : false;
 
                       return (
@@ -410,6 +532,19 @@ export function OrderDetailModal({
             </button>
 
             <div className="flex flex-wrap items-center gap-2">
+              {/* Commercial Invoice Action for Approved Orders */}
+              {isInvoiceEligible && (
+                <button
+                  onClick={handleOpenInvoice}
+                  disabled={isInvoiceLoading}
+                  type="button"
+                  className="px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  title="View or print commercial invoice"
+                >
+                  <FileText className="w-3.5 h-3.5 text-[#D83162]" />
+                  <span>{isInvoiceLoading ? "Loading Invoice..." : "View Commercial Invoice"}</span>
+                </button>
+              )}
               {/* Branch Admin Actions */}
               {isBranchAdmin && order.status === "submitted" && (
                 <button
@@ -480,25 +615,51 @@ export function OrderDetailModal({
             <p className="text-xs text-slate-600 mb-4">
               Please record a reason for rejection. The branch will be notified.
             </p>
+
+            {modalActionError && (
+              <div className="p-3 mb-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                <span>{modalActionError}</span>
+              </div>
+            )}
+
             <textarea
               rows={3}
               value={rejectReasonInput}
-              onChange={(e) => setRejectReasonInput(e.target.value)}
+              disabled={isActionSubmitting}
+              onChange={(e) => {
+                setRejectReasonInput(e.target.value);
+                if (modalActionError) setModalActionError(null);
+              }}
               placeholder="e.g., Seasonal fruit shortage; duplicate submission..."
-              className="w-full text-xs p-3 border border-slate-200 rounded-xl mb-4 focus:outline-none focus:ring-1 focus:ring-rose-500"
+              className="w-full text-xs p-3 border border-slate-200 rounded-xl mb-4 focus:outline-none focus:ring-1 focus:ring-rose-500 disabled:bg-slate-100 disabled:cursor-not-allowed"
             />
             <div className="flex justify-end gap-2">
               <button
-                onClick={() => setActiveActionModal("none")}
-                className="px-3.5 py-2 text-xs font-medium text-slate-600"
+                type="button"
+                disabled={isActionSubmitting}
+                onClick={() => {
+                  setActiveActionModal("none");
+                  setModalActionError(null);
+                }}
+                className="px-3.5 py-2 text-xs font-medium text-slate-600 hover:text-slate-900 disabled:opacity-50 cursor-pointer"
               >
                 Back
               </button>
               <button
+                type="button"
                 onClick={handleRejectConfirm}
-                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl"
+                disabled={isActionSubmitting}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 cursor-pointer shadow-xs"
               >
-                Confirm Rejection
+                {isActionSubmitting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Rejecting...</span>
+                  </>
+                ) : (
+                  <span>Confirm Rejection</span>
+                )}
               </button>
             </div>
           </div>
@@ -514,25 +675,51 @@ export function OrderDetailModal({
             <p className="text-xs text-slate-600 mb-4">
               As the order has not yet been approved by the factory, you can cancel it immediately.
             </p>
+
+            {modalActionError && (
+              <div className="p-3 mb-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                <span>{modalActionError}</span>
+              </div>
+            )}
+
             <textarea
               rows={3}
               value={rejectReasonInput}
-              onChange={(e) => setRejectReasonInput(e.target.value)}
+              disabled={isActionSubmitting}
+              onChange={(e) => {
+                setRejectReasonInput(e.target.value);
+                if (modalActionError) setModalActionError(null);
+              }}
               placeholder="Reason for cancellation..."
-              className="w-full text-xs p-3 border border-slate-200 rounded-xl mb-4 focus:outline-none focus:ring-1 focus:ring-rose-500"
+              className="w-full text-xs p-3 border border-slate-200 rounded-xl mb-4 focus:outline-none focus:ring-1 focus:ring-rose-500 disabled:bg-slate-100 disabled:cursor-not-allowed"
             />
             <div className="flex justify-end gap-2">
               <button
-                onClick={() => setActiveActionModal("none")}
-                className="px-3.5 py-2 text-xs font-medium text-slate-600"
+                type="button"
+                disabled={isActionSubmitting}
+                onClick={() => {
+                  setActiveActionModal("none");
+                  setModalActionError(null);
+                }}
+                className="px-3.5 py-2 text-xs font-medium text-slate-600 hover:text-slate-900 disabled:opacity-50 cursor-pointer"
               >
                 Keep Order
               </button>
               <button
+                type="button"
                 onClick={handleCancelConfirm}
-                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl"
+                disabled={isActionSubmitting}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 cursor-pointer shadow-xs"
               >
-                Cancel Order Now
+                {isActionSubmitting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Cancelling...</span>
+                  </>
+                ) : (
+                  <span>Cancel Order Now</span>
+                )}
               </button>
             </div>
           </div>
@@ -548,25 +735,51 @@ export function OrderDetailModal({
             <p className="text-xs text-slate-600 mb-4">
               Describe what the branch needs to adjust before the order can be approved.
             </p>
+
+            {modalActionError && (
+              <div className="p-3 mb-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                <span>{modalActionError}</span>
+              </div>
+            )}
+
             <textarea
               rows={3}
               value={correctionNoteInput}
-              onChange={(e) => setCorrectionNoteInput(e.target.value)}
+              disabled={isActionSubmitting}
+              onChange={(e) => {
+                setCorrectionNoteInput(e.target.value);
+                if (modalActionError) setModalActionError(null);
+              }}
               placeholder="e.g. Please reduce Mango crates to 4 or select Guava substitution..."
-              className="w-full text-xs p-3 border border-slate-200 rounded-xl mb-4 focus:outline-none focus:ring-1 focus:ring-amber-500"
+              className="w-full text-xs p-3 border border-slate-200 rounded-xl mb-4 focus:outline-none focus:ring-1 focus:ring-amber-500 disabled:bg-slate-100 disabled:cursor-not-allowed"
             />
             <div className="flex justify-end gap-2">
               <button
-                onClick={() => setActiveActionModal("none")}
-                className="px-3.5 py-2 text-xs font-medium text-slate-600"
+                type="button"
+                disabled={isActionSubmitting}
+                onClick={() => {
+                  setActiveActionModal("none");
+                  setModalActionError(null);
+                }}
+                className="px-3.5 py-2 text-xs font-medium text-slate-600 hover:text-slate-900 disabled:opacity-50 cursor-pointer"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={handleCorrectionConfirm}
-                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl"
+                disabled={isActionSubmitting}
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 cursor-pointer shadow-xs"
               >
-                Return to Branch
+                {isActionSubmitting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Returning...</span>
+                  </>
+                ) : (
+                  <span>Return to Branch</span>
+                )}
               </button>
             </div>
           </div>
@@ -610,6 +823,15 @@ export function OrderDetailModal({
       {/* Printable Slip Preview */}
       {activeActionModal === "print" && (
         <PrintablePackingSlip order={order} onClose={() => setActiveActionModal("none")} />
+      )}
+
+      {/* Commercial Invoice Modal */}
+      {isInvoiceModalOpen && invoiceData && (
+        <InvoiceModal
+          invoice={invoiceData}
+          order={order}
+          onClose={() => setIsInvoiceModalOpen(false)}
+        />
       )}
     </>
   );

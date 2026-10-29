@@ -2,7 +2,6 @@ export type UserRole = "super_admin" | "branch_admin" | "delivery_staff";
 
 export interface UserProfile {
   id: string;
-  email: string | null;
   full_name: string | null;
   role: string;
   branch_id: string | null;

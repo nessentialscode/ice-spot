@@ -11,9 +11,12 @@ import {
   Eye,
   EyeOff,
   RotateCcw,
-  AlertCircle
+  AlertCircle,
+  CheckCircle2,
+  LogOut
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { signOutAction } from "@/lib/actions/auth";
 import { type UserProfile, getDashboardPathForRole } from "@/lib/supabase/auth-utils";
 import { useAdmin } from "@/context/AdminContext";
 
@@ -27,6 +30,10 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [activeSession, setActiveSession] = useState<{
+    email: string;
+    role: string;
+  } | null>(null);
 
   // Surface any redirect error codes safely
   useEffect(() => {
@@ -36,11 +43,13 @@ function LoginForm() {
     } else if (errorParam === "profile_missing") {
       setErrorMessage("No administrative profile was found for this user. Access denied.");
     } else if (errorParam === "forbidden") {
-      setErrorMessage("You do not have permission to view that section.");
+      setErrorMessage("You do not have permission to view that section with your current role.");
+    } else if (errorParam === "unauthenticated") {
+      setErrorMessage("Please sign in with your administrator credentials to access that portal.");
     }
   }, [searchParams]);
 
-  // Check if session is already active and redirect to appropriate dashboard
+  // Inspect session for active status without auto-navigating away unprompted
   useEffect(() => {
     let isMounted = true;
     async function checkSession() {
@@ -59,11 +68,11 @@ function LoginForm() {
 
           const profile = profileData as UserProfile | null;
 
-          if (profile && profile.is_active) {
-            const target = getDashboardPathForRole(profile.role);
-            if (target) {
-              router.push(target);
-            }
+          if (profile && profile.is_active && isMounted) {
+            setActiveSession({
+              email: session.user.email || profile.full_name || "Active Administrator",
+              role: profile.role,
+            });
           }
         }
       } catch {
@@ -75,7 +84,32 @@ function LoginForm() {
     return () => {
       isMounted = false;
     };
-  }, [router]);
+  }, []);
+
+  const handleSignOutActiveSession = async () => {
+    setIsLoading(true);
+    try {
+      await signOutAction();
+    } catch {
+      // ignore
+    }
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+    } catch {
+      // ignore
+    }
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem("icespot_auth_email");
+      } catch {
+        // ignore
+      }
+    }
+    setActiveSession(null);
+    setErrorMessage(null);
+    setIsLoading(false);
+  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,6 +158,11 @@ function LoginForm() {
       const profile = profileData as UserProfile | null;
 
       if (profileError || !profile) {
+        console.error("[Icespot Auth] Profile validation failed for user:", {
+          userId: authData.user.id,
+          email: authData.user.email,
+          error: profileError
+        });
         await supabase.auth.signOut();
         setErrorMessage("No authorized profile found for this account. Access denied.");
         setIsLoading(false);
@@ -220,6 +259,35 @@ function LoginForm() {
               <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-[#BD1F49] text-xs font-medium flex items-center gap-2.5 animate-in fade-in">
                 <AlertCircle className="w-4 h-4 flex-shrink-0 text-[#E22F62]" />
                 <span>{errorMessage}</span>
+              </div>
+            )}
+
+            {/* Active Session Detected Notice (Clear previous session or require fresh authentication; no shortcut bypass) */}
+            {activeSession && !errorMessage && (
+              <div className="mb-5 p-3.5 rounded-2xl bg-amber-50/90 border border-amber-200/90 text-left shadow-xs animate-in fade-in">
+                <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                    <span className="text-xs font-bold text-amber-950">Active Session Detected</span>
+                  </div>
+                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-200/80 text-amber-900 tracking-wider">
+                    {activeSession.role.replace(/_/g, " ")}
+                  </span>
+                </div>
+                <p className="text-[11px] text-amber-800 leading-snug">
+                  An active session is detected for <strong>{activeSession.email}</strong>. Entering any protected portal requires fresh authentication. Please enter credentials below or terminate the existing session.
+                </p>
+                <div className="mt-3 flex items-center justify-end">
+                  <button
+                    type="button"
+                    onClick={handleSignOutActiveSession}
+                    disabled={isLoading}
+                    className="py-1.5 px-3 bg-white hover:bg-slate-100 border border-amber-200 text-amber-900 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs disabled:opacity-50"
+                  >
+                    <LogOut className="w-3.5 h-3.5 text-amber-700" />
+                    <span>{isLoading ? "Signing Out..." : "Sign Out Active Session"}</span>
+                  </button>
+                </div>
               </div>
             )}
 

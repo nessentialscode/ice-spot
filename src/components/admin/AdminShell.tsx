@@ -3,7 +3,7 @@
 import React, { ReactNode, useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAdmin } from "@/context/AdminContext";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -11,6 +11,8 @@ import {
   ExternalLink,
   LogOut
 } from "lucide-react";
+
+import { signOutAction } from "@/lib/actions/auth";
 
 interface AdminShellProps {
   title?: string;
@@ -26,112 +28,123 @@ interface AdminShellProps {
 
 export function AdminShell({
   title = "Youback Icespot Factory",
-  subtitle = "Order Management & Logistics Portal",
+  subtitle = "Varavoor Central Production & Operations Portal",
   roleBadgeText,
   roleBadgeColor = "rose",
   userEmail,
   children
 }: AdminShellProps) {
   const router = useRouter();
-  const { demoRole, resetDemoData, showToast } = useAdmin();
-  const [storedEmail, setStoredEmail] = useState<string>("");
+  const pathname = usePathname();
+  const { resetDemoData, showToast } = useAdmin();
+  const [isExiting, setIsExiting] = useState(false);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const saved = localStorage.getItem("icespot_auth_email");
-        if (saved) setStoredEmail(saved);
-      } catch {
-        // ignore
-      }
-    }
-  }, []);
+  // Link logo to current portal home rather than unauthenticated login page
+  const portalHomeHref = pathname?.includes("/admin/branch")
+    ? "/admin/branch"
+    : pathname?.includes("/admin/delivery")
+    ? "/admin/delivery"
+    : "/admin/super-admin";
 
-  // Determine badge text and color based on demoRole if not explicitly passed
-  const activeRoleBadge =
-    roleBadgeText ||
-    (demoRole === "super-admin"
-      ? "SUPER ADMIN"
-      : demoRole === "branch-admin"
-      ? "BRANCH ADMIN"
-      : "STAFF ADMIN");
+  // Role badge strictly uses verified roleBadgeText or safe fallback
+  const activeRoleBadge = roleBadgeText || "PORTAL STAFF";
 
   const badgeColorClasses =
-    roleBadgeColor === "amber" || demoRole === "branch-admin"
+    roleBadgeColor === "amber"
       ? "bg-amber-100 text-amber-900 border border-amber-200"
-      : roleBadgeColor === "sky" || demoRole === "delivery-staff"
+      : roleBadgeColor === "sky"
       ? "bg-sky-100 text-sky-900 border border-sky-200"
       : "bg-rose-100 text-[#BD1F49] border border-rose-200";
 
-  const activeEmail =
-    storedEmail ||
-    userEmail ||
-    (demoRole === "super-admin"
-      ? "admin@icespot.com"
-      : demoRole === "branch-admin"
-      ? "ollur@icespot.com"
-      : "staff@icespot.com");
+  // Shared header displays only verified authenticated user email; never invents fallback identities
+  const activeEmail = userEmail || "Authenticating...";
 
   const handleRefresh = () => {
+    if (userEmail) {
+      router.refresh();
+      showToast("Operational portal view refreshed", "info");
+      return;
+    }
     resetDemoData();
     showToast("Portal operational data refreshed", "info");
   };
 
-  const handleSignOut = async () => {
+  const handleExitPortal = async () => {
+    if (isExiting) return;
+    setIsExiting(true);
+
     try {
-      const supabase = createClient();
-      await supabase.auth.signOut();
-    } catch {
-      // ignore
-    }
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.removeItem("icespot_auth_email");
-      } catch {
-        // ignore
+      // 1. Invalidate session on server and clear response cookies
+      const serverResult = await signOutAction();
+      if (!serverResult.success) {
+        showToast(serverResult.error || "Session invalidation failed. Please try again.", "error");
+        setIsExiting(false);
+        return;
       }
+
+      // 2. Clear client-side Supabase instance
+      try {
+        const supabase = createClient();
+        await supabase.auth.signOut();
+      } catch {
+        // ignore client library error if server already signed out
+      }
+
+      // 3. Clear only application-specific transient UI state that is safe to clear
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.removeItem("icespot_auth_email");
+          localStorage.removeItem("icespot_active_dispatch_id");
+        } catch {
+          // ignore
+        }
+      }
+
+      // 4. Hard navigation to /admin to ensure clean state tree
+      window.location.href = "/admin";
+    } catch (err: any) {
+      showToast("Exit portal failed: " + (err?.message || "Network error"), "error");
+      setIsExiting(false);
     }
-    router.push("/admin");
-    router.refresh();
   };
 
   return (
-    <div className="min-h-screen bg-[#FFF7F9] text-slate-800 flex flex-col font-sans antialiased selection:bg-rose-100 selection:text-[#BD1F49]">
-      {/* Top Navigation Bar - Matched with Reference Image */}
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-rose-100/90 px-4 sm:px-8 py-3.5 shadow-[0_2px_12px_rgba(216,49,98,0.03)]">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+    <div className="min-h-screen bg-[#FFF7F9] text-slate-800 flex flex-col font-sans antialiased selection:bg-rose-100 selection:text-[#BD1F49] max-w-full overflow-x-hidden">
+      {/* Top Navigation Bar - Responsive on all mobile devices */}
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-rose-100/90 px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3.5 shadow-[0_2px_12px_rgba(216,49,98,0.03)] w-full max-w-full">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4 w-full min-w-0">
           {/* Left: Brand Logo + Title + Role Badge + Subtitle */}
-          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-            <Link href="/admin" className="flex-shrink-0 hover:opacity-90 transition-opacity">
+          <div className="flex items-center gap-2 sm:gap-3.5 min-w-0 flex-1">
+            <Link href={portalHomeHref} className="flex-shrink-0 hover:opacity-90 transition-opacity">
               <Image
                 src="/assets/icespot-brand-logo.png"
                 alt="YouBack Icespot"
-                width={140}
-                height={67}
+                width={120}
+                height={58}
                 priority
-                className="h-9 sm:h-10 w-auto object-contain"
+                className="h-7 sm:h-9 md:h-10 w-auto object-contain"
               />
             </Link>
 
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm sm:text-base font-black text-slate-900 tracking-tight leading-tight">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <span className="text-xs sm:text-base font-black text-slate-900 tracking-tight leading-tight truncate max-w-[130px] sm:max-w-none">
                   {title}
                 </span>
                 <span
-                  className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${badgeColorClasses}`}
+                  className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider whitespace-nowrap ${badgeColorClasses}`}
                 >
                   {activeRoleBadge}
                 </span>
               </div>
-              <p className="text-[11px] text-slate-500 font-medium truncate mt-0.5">
+              <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium truncate mt-0.5 hidden xs:block sm:block">
                 {subtitle}
               </p>
             </div>
           </div>
 
-          {/* Right: User Email Pill + Refresh + Public Website + Sign Out */}
-          <div className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
+          {/* Right: User Email Pill + Refresh + Public Website + Exit Portal Action */}
+          <div className="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
             {/* User Email Chip */}
             <div className="hidden lg:inline-flex items-center px-3 py-1.5 rounded-xl bg-slate-100/90 text-slate-700 text-xs font-semibold border border-slate-200/70">
               {activeEmail}
@@ -141,10 +154,10 @@ export function AdminShell({
             <button
               onClick={handleRefresh}
               type="button"
-              className="p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-transparent hover:border-slate-200 transition-colors cursor-pointer"
+              className="p-1.5 sm:p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200/60 hover:border-slate-300 transition-colors cursor-pointer"
               title="Refresh / Reset Prototype Data"
             >
-              <RotateCcw className="w-4 h-4" />
+              <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
 
             {/* Public Website Button */}
@@ -156,21 +169,23 @@ export function AdminShell({
               <span>Public Website</span>
             </Link>
 
-            {/* Sign Out Button */}
+            {/* Clearly Labeled Exit Portal Action */}
             <button
-              onClick={handleSignOut}
+              onClick={handleExitPortal}
+              disabled={isExiting}
               type="button"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 bg-white hover:bg-rose-50 text-[#BD1F49] text-xs font-bold transition-colors cursor-pointer shadow-xs"
+              title="Terminate session and exit admin portal"
+              className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-xl border border-rose-200 bg-white hover:bg-rose-50 text-[#BD1F49] text-xs font-bold transition-all cursor-pointer shadow-xs whitespace-nowrap disabled:opacity-60"
             >
               <LogOut className="w-3.5 h-3.5" />
-              <span>Sign Out</span>
+              <span>{isExiting ? "Exiting..." : "Exit Portal"}</span>
             </button>
           </div>
         </div>
       </header>
 
       {/* Main Portal Body */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-5 sm:space-y-6 max-w-full overflow-x-hidden">
         {children}
       </main>
 

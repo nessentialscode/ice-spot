@@ -1,37 +1,138 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { useAdmin } from "@/context/AdminContext";
-import { OrderItem } from "@/types/admin";
+import { OrderItem, AdminProduct } from "@/types/admin";
+import {
+  BranchResolutionStatus,
+  VerifiedBranchInfo,
+} from "@/lib/supabase/server-auth";
+import { createOrderAction } from "@/lib/actions/orders";
 import {
   Store,
   Truck,
   Plus,
   Minus,
   CheckCircle2,
-  Send
+  Send,
+  AlertCircle,
+  Building2,
+  Info,
+  Loader2
 } from "lucide-react";
 
 interface BranchAdminViewProps {
   userEmail?: string;
+  assignedBranchId?: string;
+  userRole?: string;
+  branchStatus?: BranchResolutionStatus;
+  assignedBranch?: VerifiedBranchInfo | null;
+  availableBranches?: VerifiedBranchInfo[];
+  resolutionError?: string;
+  initialProducts?: AdminProduct[];
+  initialPendingOrder?: {
+    id: string;
+    orderNumber: string;
+    status: string;
+    totalCrates: number;
+    submittedAt: string;
+  } | null;
 }
 
-export function BranchAdminView({ userEmail }: BranchAdminViewProps) {
+export function BranchAdminView({
+  userEmail,
+  assignedBranchId,
+  userRole,
+  branchStatus = "profile_unassigned",
+  assignedBranch = null,
+  availableBranches = [],
+  resolutionError,
+  initialProducts,
+  initialPendingOrder = null
+}: BranchAdminViewProps) {
   const {
-    products,
+    orders,
+    products: contextProducts,
     dispatches,
     submitOrder,
     receiveShipment,
-    showToast
+    showToast,
+    syncOrdersFromServer,
   } = useAdmin();
 
-  // Ollur Branch ID is "branch-13" or "ollur-branch"
-  const ollurDispatches = dispatches.filter((d) =>
-    d.stops.some((s) => s.branchId.includes("ollur") || s.branchId === "branch-13")
+  // Synchronize branch order status from authoritative server on mount
+  useEffect(() => {
+    let mounted = true;
+    if (typeof syncOrdersFromServer === "function") {
+      syncOrdersFromServer().catch((err) => {
+        if (mounted) {
+          console.warn("[BranchAdminView] Failed to synchronize orders on mount:", err);
+        }
+      });
+    }
+    return () => {
+      mounted = false;
+    };
+  }, [syncOrdersFromServer]);
+
+  // Super Admin can switch between active branches across the franchise network
+  const [selectedBranch, setSelectedBranch] = useState<VerifiedBranchInfo | null>(() => {
+    if (assignedBranch) return assignedBranch;
+    if (availableBranches && availableBranches.length > 0) return availableBranches[0];
+    return null;
+  });
+
+  const normalizedRole = userRole?.toLowerCase().replace(/-/g, "_");
+  const activeBranch = normalizedRole === "super_admin" ? (selectedBranch || assignedBranch) : assignedBranch;
+  const effectiveBranchId = activeBranch?.id || assignedBranchId;
+
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const isBranchAuthorized =
+    (branchStatus === "authorized" ||
+      branchStatus === "super_admin_authorized" ||
+      normalizedRole === "super_admin") &&
+    Boolean(effectiveBranchId && UUID_REGEX.test(effectiveBranchId));
+
+  // Determine if branch already has an active order awaiting decision
+  const activePendingOrder =
+    orders.find((o) => {
+      const matchesBranch =
+        effectiveBranchId &&
+        o.branchId &&
+        (o.branchId.toLowerCase() === effectiveBranchId.toLowerCase() ||
+          (activeBranch?.code &&
+            o.branchCode &&
+            o.branchCode.toLowerCase() === activeBranch.code.toLowerCase()));
+      const isPending =
+        o.status === "submitted" ||
+        o.status === "under-review";
+      return matchesBranch && isPending;
+    }) || initialPendingOrder;
+
+  const pendingOrderTotalCrates = activePendingOrder
+    ? "items" in activePendingOrder
+      ? activePendingOrder.items.reduce((sum, it) => sum + (it.requestedPacks || 0), 0)
+      : activePendingOrder.totalCrates
+    : 0;
+
+  // Use database products with real UUIDs if provided, otherwise context products
+  const products = (initialProducts && initialProducts.length > 0) ? initialProducts : contextProducts;
+
+  // Filter dispatches for the current active branch
+  const currentBranchDispatches = dispatches.filter((d) =>
+    d.stops.some((s) => {
+      if (effectiveBranchId && s.branchId.toLowerCase() === effectiveBranchId.toLowerCase()) return true;
+      if (activeBranch) {
+        const codeMatch = s.branchId.toLowerCase().includes(activeBranch.code.toLowerCase());
+        const nameMatch = activeBranch.name.toLowerCase().includes("ollur") && (s.branchId.includes("ollur") || s.branchId === "branch-13");
+        if (codeMatch || nameMatch) return true;
+      }
+      return s.branchId.includes("ollur") || s.branchId === "branch-13";
+    })
   );
 
-  // Weekly Order Quantities state (crate counts for each of the 10 flavours)
+  // Weekly Order Quantities state (crate counts for each of the flavours)
   const [orderQuantities, setOrderQuantities] = useState<Record<string, number>>(() => {
     const initial: Record<string, number> = {};
     products.forEach((p, idx) => {
@@ -56,10 +157,26 @@ export function BranchAdminView({ userEmail }: BranchAdminViewProps) {
   const totalSticks = totalCrates * 10;
   const estimatedCost = totalSticks * 35; // standard handcrafted stick wholesale base ₹35
 
-  const handleSubmitOrder = (e: React.FormEvent) => {
+  const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (totalCrates === 0) {
       showToast("Please add at least 1 crate to submit an order", "error");
+      return;
+    }
+
+    if (activePendingOrder) {
+      showToast(
+        `Cannot submit: Order ${activePendingOrder.orderNumber} is already pending review for this branch.`,
+        "error"
+      );
+      return;
+    }
+
+    if (!isBranchAuthorized || !effectiveBranchId || !UUID_REGEX.test(effectiveBranchId)) {
+      showToast(
+        "Cannot submit order: No authorized branch UUID linked. Submission disabled.",
+        "error"
+      );
       return;
     }
 
@@ -80,32 +197,132 @@ export function BranchAdminView({ userEmail }: BranchAdminViewProps) {
         };
       });
 
-    submitOrder({
-      branchId: "branch-13",
-      items,
-      notes: orderNotes,
-      requestedDeliveryDate: requestedDate
-    });
+    try {
+      // Execute verified server action with transactional database persistence
+      const result = await createOrderAction({
+        branchId: effectiveBranchId,
+        items: items.map((it) => ({
+          productId: it.productId,
+          requestedQuantity: it.requestedPacks,
+        })),
+        notes: orderNotes,
+      });
 
-    showToast("Weekly replenishment order submitted to Varavoor Factory", "success");
-    setIsSubmitting(false);
+      if (!result.success) {
+        showToast(`Order submission failed: ${result.message}`, "error");
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Record in local state with confirmed order number
+      submitOrder({
+        branchId: effectiveBranchId,
+        branchName: activeBranch?.name || "Ice Spot Ollur",
+        branchCode: activeBranch?.code || "BR-OLL-003",
+        destinationFactory: "Varavoor Factory",
+        items,
+        notes: orderNotes,
+        requestedDeliveryDate: requestedDate,
+        serverOrderId: result.data?.orderId,
+        serverOrderNumber: result.data?.orderNumber,
+        skipServerSync: true,
+      });
+
+      // Clear the order form inputs after verified persistence
+      const clearedQuantities: Record<string, number> = {};
+      products.forEach((p) => {
+        clearedQuantities[p.id] = 0;
+      });
+      setOrderQuantities(clearedQuantities);
+      setOrderNotes("");
+
+      showToast(
+        `Order #${result.data?.orderNumber || "submitted"} confirmed and sent to Varavoor Factory!`,
+        "success"
+      );
+    } catch (err: any) {
+      showToast(`Submission error: ${err?.message || "Unexpected failure"}`, "error");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleConfirmReceipt = (orderId: string) => {
+    const parlourName = activeBranch ? activeBranch.name : "Ollur parlour";
     receiveShipment(orderId, {}, {}, {}, "All crates received frozen at -18°C in perfect factory condition");
-    showToast("Shipment verified and received successfully at Ollur parlour", "success");
+    showToast(`Shipment verified and received successfully at ${parlourName}`, "success");
   };
+
+  const shellSubtitle = activeBranch
+    ? `${activeBranch.code} • ${activeBranch.name} • ${activeBranch.district || "Thrissur"}`
+    : "Branch Replenishment Order Desk";
+
+  const shellRoleBadge = "BRANCH ADMIN";
+  const shellRoleColor: "amber" = "amber";
 
   return (
     <AdminShell
       title="Youback Icespot Factory"
-      subtitle="Franchise Parlour #13 &bull; Ollur, Thrissur"
-      roleBadgeText="BRANCH ADMIN"
-      roleBadgeColor="amber"
-      userEmail={userEmail || "ollur@icespot.com"}
+      subtitle={shellSubtitle}
+      roleBadgeText={shellRoleBadge}
+      roleBadgeColor={shellRoleColor}
+      userEmail={userEmail}
     >
+      {/* Super Admin Franchise Branch Switcher */}
+      {userRole === "super_admin" && availableBranches && availableBranches.length > 0 && (
+        <div className="mb-6 p-4 rounded-2xl bg-indigo-50/80 border border-indigo-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-2.5">
+            <Building2 className="w-5 h-5 text-indigo-700 flex-shrink-0" />
+            <div>
+              <span className="text-xs font-black text-indigo-950 uppercase tracking-wide">
+                Super Admin Branch Audit &amp; Replenishment Mode
+              </span>
+              <p className="text-[11px] text-indigo-700 font-medium">
+                Select any parlour in the franchise network to manage orders or inspect manifests
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <label htmlFor="branch-picker" className="text-xs font-bold text-indigo-950">
+              Parlour:
+            </label>
+            <select
+              id="branch-picker"
+              value={activeBranch?.id || ""}
+              onChange={(e) => {
+                const found = availableBranches.find((b) => b.id === e.target.value);
+                if (found) setSelectedBranch(found);
+              }}
+              className="px-3 py-1.5 bg-white border border-indigo-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer shadow-xs"
+            >
+              {availableBranches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.code} – {b.name} ({b.district || "Kerala"})
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
+
+      {/* Branch Authorization Warning Banner */}
+      {(!isBranchAuthorized || resolutionError) && (
+        <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-300 flex items-start gap-3 shadow-xs">
+          <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <strong className="text-xs font-black text-rose-950 uppercase tracking-wide">
+              Branch Assignment Notice
+            </strong>
+            <p className="text-xs text-rose-800 font-medium mt-1">
+              {resolutionError || "Your administrative profile is not linked to an active franchise branch in the database. Replenishment orders cannot be placed until your profile is assigned a valid branch UUID."}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* SECTION 1: Weekly Replenishment Order Form */}
-      <div className="bg-white rounded-[22px] border border-rose-100/90 shadow-[0_4px_24px_rgba(216,49,98,0.04)] p-6 sm:p-7">
+      <div className="bg-white rounded-2xl sm:rounded-[22px] border border-rose-100/90 shadow-[0_4px_24px_rgba(216,49,98,0.04)] p-4 sm:p-7">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 mb-5 border-b border-slate-100 gap-2">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-100 text-amber-700 flex items-center justify-center flex-shrink-0">
@@ -116,7 +333,7 @@ export function BranchAdminView({ userEmail }: BranchAdminViewProps) {
                 WEEKLY STOCK REPLENISHMENT ORDER
               </h2>
               <p className="text-xs text-slate-400 font-medium mt-0.5">
-                Select crate requirements for your parlour restock &bull; Dispatched from Varavoor Central Cold Storage
+                Select crate requirements for parlour restock &bull; Dispatched from Varavoor Central Cold Storage
               </p>
             </div>
           </div>
@@ -126,8 +343,31 @@ export function BranchAdminView({ userEmail }: BranchAdminViewProps) {
           </div>
         </div>
 
+        {/* Pending Order Notice Banner */}
+        {activePendingOrder && (
+          <div className="mb-6 p-4 rounded-2xl bg-amber-50/90 border border-amber-300 flex items-start gap-3 shadow-xs">
+            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <strong className="text-xs font-black text-amber-950 uppercase tracking-wide">
+                  Order Pending Review: {activePendingOrder.orderNumber}
+                </strong>
+                <span className="font-mono text-[10px] font-bold bg-amber-200/90 text-amber-900 px-2 py-0.5 rounded-full uppercase">
+                  {activePendingOrder.status.replace(/_/g, "-")}
+                </span>
+              </div>
+              <p className="text-xs text-amber-800 font-medium mt-1">
+                This branch already has an active replenishment order awaiting Varavoor Factory review. To maintain inventory integrity and prevent duplicate production runs, another order cannot be placed until the pending order is reviewed.
+              </p>
+              <p className="text-[11px] text-amber-700 mt-1 font-semibold">
+                Order Total: {pendingOrderTotalCrates || "—"} Crates &bull; Submitted: {activePendingOrder.submittedAt || "Recent"}
+              </p>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmitOrder}>
-          {/* 2-Column Grid of 10 Flavour Crate Counters */}
+          {/* 2-Column Grid of Flavour Crate Counters */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             {products.map((prod) => {
               const qty = orderQuantities[prod.id] || 0;
@@ -211,7 +451,7 @@ export function BranchAdminView({ userEmail }: BranchAdminViewProps) {
             </div>
           </div>
 
-          {/* Submission Bar */}
+          {/* Submission Bar & Actionable Diagnostics */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-slate-100">
             <div>
               <span className="text-xs text-slate-500 font-medium">Order Total:</span>{" "}
@@ -223,20 +463,98 @@ export function BranchAdminView({ userEmail }: BranchAdminViewProps) {
               </span>
             </div>
 
-            <button
-              type="submit"
-              disabled={isSubmitting || totalCrates === 0}
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#0F172A] hover:bg-[#1E293B] text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer disabled:opacity-50"
-            >
-              <Send className="w-3.5 h-3.5 text-amber-400" />
-              <span>Submit Order to Varavoor Factory</span>
-            </button>
+            <div className="flex flex-col items-end gap-2 max-w-xl">
+              {/* Branch Status Banners */}
+              {isBranchAuthorized ? (
+                <div className="flex items-center gap-2 text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                  <span>
+                    Authorized Branch: <strong>{activeBranch?.code}</strong> – {activeBranch?.name}
+                    <span className="ml-2 font-mono text-[10px] text-emerald-700 bg-emerald-100/70 px-1.5 py-0.5 rounded">
+                      {activeBranch?.id}
+                    </span>
+                  </span>
+                </div>
+              ) : branchStatus === "profile_unassigned" ? (
+                <div className="flex items-start gap-2 text-xs font-semibold text-rose-800 bg-rose-50 p-2.5 rounded-xl border border-rose-200 text-left">
+                  <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="block text-rose-900">Profile Missing Branch Assignment:</strong>
+                    Account has role <code className="font-mono text-[10px] bg-rose-100 px-1 rounded">branch_admin</code>, but no branch UUID is linked in <code className="font-mono text-[10px] bg-rose-100 px-1 rounded">public.profiles.branch_id</code>.
+                    <span className="block mt-0.5 text-[11px] text-rose-700 font-normal">
+                      <strong>Safe administrative action required:</strong> A Super Administrator must update your profile in <code className="font-mono">public.profiles</code> to assign your branch UUID.
+                    </span>
+                  </div>
+                </div>
+              ) : branchStatus === "malformed_uuid" ? (
+                <div className="flex items-start gap-2 text-xs font-semibold text-rose-800 bg-rose-50 p-2.5 rounded-xl border border-rose-200 text-left">
+                  <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="block text-rose-900">Malformed Branch Identifier:</strong>
+                    Assigned branch UUID (<span className="font-mono">{assignedBranchId}</span>) is not a valid UUID format.
+                  </div>
+                </div>
+              ) : branchStatus === "branch_not_found" ? (
+                <div className="flex items-start gap-2 text-xs font-semibold text-rose-800 bg-rose-50 p-2.5 rounded-xl border border-rose-200 text-left">
+                  <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="block text-rose-900">Branch Record Missing:</strong>
+                    Assigned branch UUID (<span className="font-mono">{assignedBranchId}</span>) does not exist in <code className="font-mono">public.branches</code>.
+                  </div>
+                </div>
+              ) : branchStatus === "branch_inactive" ? (
+                <div className="flex items-start gap-2 text-xs font-semibold text-amber-800 bg-amber-50 p-2.5 rounded-xl border border-amber-200 text-left">
+                  <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="block text-amber-900">Branch Inactive:</strong>
+                    The assigned branch is deactivated. Order submissions are disabled.
+                  </div>
+                </div>
+              ) : branchStatus === "query_error" ? (
+                <div className="flex items-start gap-2 text-xs font-semibold text-rose-800 bg-rose-50 p-2.5 rounded-xl border border-rose-200 text-left">
+                  <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="block text-rose-900">Database / RLS Query Error:</strong>
+                    {resolutionError || "Failed to query branch profile."}
+                  </div>
+                </div>
+              ) : (
+                <span className="text-[11px] font-semibold text-rose-600 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200">
+                  ⚠ No authorized branch UUID linked. Submission disabled.
+                </span>
+              )}
+
+              <button
+                type="submit"
+                id="btn-submit-branch-order"
+                data-testid="submit-branch-order"
+                disabled={isSubmitting || totalCrates === 0 || !isBranchAuthorized || Boolean(activePendingOrder)}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#0F172A] hover:bg-[#1E293B] text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed min-w-[260px]"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 text-amber-400 animate-spin" />
+                    <span>Submitting Order to Varavoor Factory...</span>
+                  </>
+                ) : activePendingOrder ? (
+                  <>
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Order Pending Factory Review</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Submit Order to Varavoor Factory</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </form>
       </div>
 
       {/* SECTION 2: Incoming Shipments & Verification */}
-      <div className="bg-white rounded-[22px] border border-rose-100/90 shadow-[0_4px_24px_rgba(216,49,98,0.04)] p-6 sm:p-7">
+      <div className="bg-white rounded-2xl sm:rounded-[22px] border border-rose-100/90 shadow-[0_4px_24px_rgba(216,49,98,0.04)] p-4 sm:p-7">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 mb-5 border-b border-slate-100 gap-2">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-100 text-amber-700 flex items-center justify-center flex-shrink-0">
@@ -253,14 +571,18 @@ export function BranchAdminView({ userEmail }: BranchAdminViewProps) {
           </div>
 
           <div className="text-xs font-bold text-slate-500">
-            {ollurDispatches.length} Shipments on Record
+            {currentBranchDispatches.length} Shipments on Record
           </div>
         </div>
 
-        {/* 2-Column Grid of Dispatches for Ollur */}
+        {/* 2-Column Grid of Dispatches for Active Branch */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {ollurDispatches.map((dispatch) => {
-            const stop = dispatch.stops.find((s) => s.branchId.includes("ollur") || s.branchId === "branch-13");
+          {currentBranchDispatches.map((dispatch) => {
+            const stop = dispatch.stops.find((s) => {
+              if (effectiveBranchId && s.branchId.toLowerCase() === effectiveBranchId.toLowerCase()) return true;
+              if (activeBranch && s.branchId.toLowerCase().includes(activeBranch.code.toLowerCase())) return true;
+              return s.branchId.includes("ollur") || s.branchId === "branch-13";
+            });
             const isCompleted = stop?.status === "delivered";
             const stopCrates = stop?.items.reduce((acc, it) => acc + it.requestedPacks, 0) || 140;
 
@@ -273,7 +595,7 @@ export function BranchAdminView({ userEmail }: BranchAdminViewProps) {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <h3 className="text-sm font-bold text-slate-900 leading-snug">
-                        Batch #{dispatch.manifestNumber} &bull; {dispatch.vehicleNumber}
+                        Batch #{dispatch.manifestNumber} &bull; {dispatch.driverPhone ? `${dispatch.vehicleNumber}` : dispatch.vehicleNumber}
                       </h3>
                       <p className="text-xs text-slate-500 font-medium mt-1">
                         Driver: <strong className="text-slate-800">{dispatch.driverName}</strong> ({dispatch.driverPhone})
@@ -297,7 +619,7 @@ export function BranchAdminView({ userEmail }: BranchAdminViewProps) {
                   </div>
 
                   <div className="mt-3 flex items-center justify-between text-[11px] text-slate-500 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                    <span>Ollur Allocation: <strong>{stopCrates} Crates</strong></span>
+                    <span>Allocation: <strong>{stopCrates} Crates</strong></span>
                     <span>Reefer Temp: <strong>-18.4&deg;C Verified</strong></span>
                   </div>
                 </div>

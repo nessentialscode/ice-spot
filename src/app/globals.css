@@ -99,13 +99,11 @@
 
 
 html {
-
   scroll-behavior: smooth;
-
   font-size: 16px;
-
   -webkit-text-size-adjust: 100%;
-
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 
@@ -3868,191 +3866,289 @@ button {
   position: fixed;
 
   top: 0;
-
   left: 0;
-
   right: 0;
-
   bottom: 0;
-
-  background: rgba(0, 0, 0, 0.6);
-
-  backdrop-filter: blur(5px);
-
-  z-index: 100;
-
+  background: rgba(22, 4, 12, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 99999;
   display: flex;
-
   align-items: center;
-
   justify-content: center;
-
   opacity: 0;
-
   visibility: hidden;
-
-  transition: all 0.3s ease;
-
-  padding: 20px;
-
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              visibility 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 16px;
 }
-
-
 
 .modal-backdrop.open {
-
   opacity: 1;
-
   visibility: visible;
-
 }
-
-
 
 .modal-window {
-
-  background: var(--color-white);
-
-  border-radius: 24px;
-
+  background: #FFFFFF;
+  border-radius: 28px;
   width: 100%;
-
   max-width: 480px;
-
-  padding: 32px;
-
+  padding: 26px 26px 24px;
   position: relative;
-
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
-
-  transform: translateY(20px) scale(0.96);
-
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-
+  box-shadow: 0 30px 70px -15px rgba(0, 0, 0, 0.4),
+              0 0 0 1px rgba(255, 255, 255, 0.8),
+              0 10px 24px -6px rgba(109, 12, 39, 0.15);
+  transform: translateY(22px) scale(0.93);
+  transition: transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1),
+              opacity 0.25s ease;
+  max-height: 92vh;
+  overflow-y: auto;
 }
-
-
 
 .modal-backdrop.open .modal-window {
-
   transform: translateY(0) scale(1);
-
 }
-
-
 
 .modal-close {
-
   position: absolute;
-
-  top: 20px;
-
-  right: 20px;
-
-  font-size: 1.5rem;
-
-  color: var(--color-text-light);
-
+  top: 18px;
+  right: 18px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  color: #64748B;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
   line-height: 1;
-
-  transition: color 0.2s ease;
-
+  cursor: pointer;
+  transition: all 0.22s ease;
+  z-index: 10;
 }
-
-
 
 .modal-close:hover {
-
-  color: var(--color-text-main);
-
+  background: #FFF1F4;
+  color: var(--color-hero-red);
+  border-color: rgba(216, 49, 98, 0.3);
+  transform: rotate(90deg) scale(1.08);
 }
 
-
+.modal-header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--color-hero-red);
+  background: rgba(216, 49, 98, 0.08);
+  border: 1px solid rgba(216, 49, 98, 0.2);
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 8px;
+}
 
 .modal-window h3 {
-
   font-family: var(--font-main);
-
   font-size: 1.6rem;
-
   font-weight: 800;
-
-  margin-bottom: 8px;
-
+  color: #0F172A;
+  margin-bottom: 4px;
+  letter-spacing: -0.02em;
 }
 
-
-
-.modal-window p {
-
-  font-size: 0.9rem;
-
-  color: var(--color-text-muted);
-
-  margin-bottom: 20px;
-
+.modal-selected-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #FFF5F7;
+  border: 1px solid rgba(216, 49, 98, 0.2);
+  padding: 5px 12px;
+  border-radius: 12px;
+  font-size: 0.88rem;
+  color: #475569;
+  margin-bottom: 18px;
 }
 
-
+/* Popping Cards Grid Over Ice Creams - One under another as Image 2 */
+.order-options-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 13px;
+}
 
 .order-option-card {
-
   display: flex;
-
-  align-items: center;
-
-  gap: 16px;
-
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
   padding: 16px;
-
-  border-radius: 14px;
-
-  border: 1px solid var(--color-border);
-
-  margin-bottom: 12px;
-
-  transition: all 0.2s ease;
-
+  border-radius: 18px;
+  background: #FFFFFF;
+  border: 1.5px solid #F1F5F9;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.24s ease,
+              border-color 0.2s ease,
+              background-color 0.2s ease;
+  position: relative;
+  overflow: hidden;
 }
-
-
 
 .order-option-card:hover {
-
-  border-color: var(--color-hero-red);
-
-  background: #FFF9FA;
-
+  transform: translateY(-4px) scale(1.02);
+  border-color: #D83162;
+  box-shadow: 0 16px 32px -8px rgba(216, 49, 98, 0.18),
+              0 4px 12px rgba(0, 0, 0, 0.04);
+  background: #FFFFFF;
 }
 
-
-
-.order-option-icon {
-
-  font-size: 1.8rem;
-
+.order-option-card:active {
+  transform: translateY(0) scale(0.98);
 }
 
+.order-option-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
 
+.order-option-icon-box {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.order-option-card:hover .order-option-icon-box {
+  transform: scale(1.12) rotate(4deg);
+}
+
+.order-option-tag {
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 2.5px 8px;
+  border-radius: 20px;
+}
 
 .order-option-info h4 {
-
   font-size: 0.95rem;
-
-  font-weight: 700;
-
+  font-weight: 800;
+  color: #0F172A;
+  margin-bottom: 3px;
+  letter-spacing: -0.01em;
 }
 
-
-
 .order-option-info p {
-
-  font-size: 0.8rem;
-
-  color: var(--color-text-muted);
-
+  font-size: 0.78rem;
+  color: #64748B;
+  line-height: 1.35;
   margin: 0;
+}
 
+.order-option-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-hero-red);
+  padding-top: 8px;
+  border-top: 1px solid #F8FAFC;
+}
+
+@media (max-width: 639px) {
+  .modal-window {
+    padding: 18px 16px 14px;
+    border-radius: 22px;
+    max-height: 85vh;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .modal-window::-webkit-scrollbar {
+    display: none;
+  }
+
+  .modal-close {
+    top: 12px;
+    right: 12px;
+    width: 30px;
+    height: 30px;
+    font-size: 1.1rem;
+  }
+
+  .modal-header-badge {
+    font-size: 0.62rem;
+    padding: 2px 7px;
+    margin-bottom: 3px;
+  }
+
+  .modal-window h3 {
+    font-size: 1.28rem;
+    margin-bottom: 2px;
+  }
+
+  .modal-selected-badge {
+    padding: 2.5px 8px;
+    font-size: 0.76rem;
+    margin-bottom: 10px;
+  }
+
+  .order-options-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .order-option-card {
+    padding: 13px 15px;
+    gap: 8px;
+    border-radius: 16px;
+  }
+
+  .order-option-icon-box {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+  }
+
+  .order-option-icon-box svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .order-option-tag {
+    font-size: 0.58rem;
+    padding: 1.5px 5px;
+  }
+
+  .order-option-info h4 {
+    font-size: 0.82rem;
+    margin-bottom: 1px;
+  }
+
+  .order-option-info p {
+    font-size: 0.68rem;
+    line-height: 1.2;
+  }
+
+  .order-option-footer {
+    padding-top: 4px;
+    font-size: 0.64rem;
+  }
 }
 
 

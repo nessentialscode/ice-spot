@@ -1,7 +1,10 @@
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { validateSuperAdminAction } from "@/lib/supabase/server-auth";
+import {
+  validateSuperAdminAction,
+  validateAuthenticatedAction,
+} from "@/lib/supabase/server-auth";
 
 export interface ActionResult<T = any> {
   success: boolean;
@@ -11,9 +14,11 @@ export interface ActionResult<T = any> {
 }
 
 /**
- * Toggles a single branch's Open/Closed status in the database.
- * Strictly requires active Super Admin authentication.
+ * Toggles a single branch's Active (Open/Closed) status in the database.
+ * Strictly requires active Super Admin authorization matching database RLS policies.
  */
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function toggleBranchStatusAction(
   branchId: string,
   isOpen: boolean
@@ -28,16 +33,25 @@ export async function toggleBranchStatusAction(
       };
     }
 
+    if (!branchId || !UUID_REGEX.test(branchId)) {
+      return {
+        success: false,
+        message: "Invalid branch identifier format (UUID required).",
+        error: "INVALID_IDENTIFIER",
+      };
+    }
+
     const supabase = await createServerSupabaseClient();
 
-    // 1. Update branch in Supabase
-    const { error: updateError } = await supabase
+    // Update branch is_active in Supabase
+    const { data: updatedRows, error: updateError } = await supabase
       .from("branches")
       .update({
-        is_open: isOpen,
-        status: isOpen ? "confirmed" : "closed",
+        is_active: isOpen,
+        updated_at: new Date().toISOString(),
       })
-      .eq("id", branchId);
+      .eq("id", branchId)
+      .select("id");
 
     if (updateError) {
       return {
@@ -47,14 +61,22 @@ export async function toggleBranchStatusAction(
       };
     }
 
-    // 2. Audit log
+    if (!updatedRows || updatedRows.length === 0) {
+      return {
+        success: false,
+        message: `Branch ${branchId} not found or no rows were updated.`,
+        error: "BRANCH_NOT_FOUND",
+      };
+    }
+
+    // Audit log
     if (auth.user?.id) {
       await supabase.from("audit_logs").insert({
-        user_id: auth.user.id,
-        action: isOpen ? "BRANCH_OPENED" : "BRANCH_CLOSED",
+        actor_id: auth.user.id,
+        action: isOpen ? "BRANCH_ACTIVATED" : "BRANCH_DEACTIVATED",
         entity_type: "branch",
         entity_id: branchId,
-        changes: { isOpen, actor: auth.profile?.full_name || auth.user.email },
+        details: { isActive: isOpen, actorRole: auth.profile?.role },
       });
     }
 
@@ -90,14 +112,14 @@ export async function setAllBranchesStatusAction(
 
     const supabase = await createServerSupabaseClient();
 
-    // Exclude factory headquarters from being marked closed if open
-    const { error: updateError } = await supabase
+    const { data: updatedRows, error: updateError } = await supabase
       .from("branches")
       .update({
-        is_open: isOpen,
-        status: isOpen ? "confirmed" : "closed",
+        is_active: isOpen,
+        updated_at: new Date().toISOString(),
       })
-      .neq("is_factory_headquarters", true);
+      .neq("code", "BR-VRV-001") // Preserve central factory hub active status
+      .select("id");
 
     if (updateError) {
       return {
@@ -107,24 +129,75 @@ export async function setAllBranchesStatusAction(
       };
     }
 
-    // Audit log
+    if (!updatedRows || updatedRows.length === 0) {
+      return {
+        success: false,
+        message: "No branches were updated.",
+        error: "NO_BRANCHES_UPDATED",
+      };
+    }
+
     if (auth.user?.id) {
       await supabase.from("audit_logs").insert({
-        user_id: auth.user.id,
+        actor_id: auth.user.id,
         action: isOpen ? "ALL_BRANCHES_OPENED" : "ALL_BRANCHES_CLOSED",
         entity_type: "network",
-        changes: { isOpen, actor: auth.profile?.full_name || auth.user.email },
+        details: { isOpen },
       });
     }
 
     return {
       success: true,
-      message: `All network branches marked ${isOpen ? "OPEN" : "CLOSED"}.`,
+      message: `All network branches marked as ${isOpen ? "OPEN" : "CLOSED"}.`,
     };
   } catch (err: any) {
     return {
       success: false,
-      message: err.message || "Failed to update network branches.",
+      message: err.message || "Failed to update branches.",
+      error: "SERVER_ERROR",
+    };
+  }
+}
+
+/**
+ * Reads a branch's current active status from the database.
+ */
+export async function getBranchStatusAction(
+  branchId: string
+): Promise<ActionResult<{ isOpen: boolean }>> {
+  try {
+    if (!branchId || !UUID_REGEX.test(branchId)) {
+      return {
+        success: false,
+        message: "Invalid branch identifier format (UUID required).",
+        error: "INVALID_IDENTIFIER",
+      };
+    }
+
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await supabase
+      .from("branches")
+      .select("is_active")
+      .eq("id", branchId)
+      .single();
+
+    if (error || !data) {
+      return {
+        success: false,
+        message: "Branch record not found.",
+        error: "NOT_FOUND",
+      };
+    }
+
+    return {
+      success: true,
+      message: "Branch status retrieved.",
+      data: { isOpen: data.is_active },
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      message: err.message || "Failed to retrieve status.",
       error: "SERVER_ERROR",
     };
   }

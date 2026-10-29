@@ -5,5 +5,5 @@ export default async function SuperAdminPage() {
   // Server-side authentication and role guard: strict super_admin enforcement
   const { user, profile } = await requireAdminRole(["super_admin"]);
 
-  return <SuperAdminView userEmail={profile.email || user.email || undefined} />;
+  return <SuperAdminView userEmail={user.email || undefined} />;
 }

@@ -1,13 +1,15 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, Plus, Sparkles, Check } from "lucide-react";
+import { X, Plus, Sparkles, Check, Loader2 } from "lucide-react";
 import { AdminProduct } from "@/types/admin";
 
 interface AddFlavourModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddProduct: (product: Omit<AdminProduct, "id"> & { id?: string }) => void;
+  onAddProduct: (
+    product: Omit<AdminProduct, "id"> & { id?: string }
+  ) => Promise<{ success: boolean; id?: string; message?: string }> | void;
   existingCount: number;
 }
 
@@ -38,32 +40,44 @@ export function AddFlavourModal({
   const [minStockAlert, setMinStockAlert] = useState(50);
   const [selectedColor, setSelectedColor] = useState("#E22F62");
   const [description, setDescription] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
-    const id = `flv-${name.toLowerCase().replace(/[^a-z0-9]/g, "-")}-${Date.now().toString(36).slice(-4)}`;
+    setIsSubmitting(true);
+    setErrorMessage(null);
+    try {
+      const res = await onAddProduct({
+        name: name.trim(),
+        sku: sku.trim() || `SKU-${Date.now().toString(36).toUpperCase()}`,
+        category,
+        packType,
+        unitsPerPack: Number(unitsPerPack) || 10,
+        currentStock: Number(currentStock) || 0,
+        reservedStock: 0,
+        minStockAlert: Number(minStockAlert) || 50,
+        color: selectedColor,
+        imageUrl: "/images/flavours/default-stick.png",
+        isAvailable: true,
+        isActive: true,
+      });
 
-    onAddProduct({
-      id,
-      name: name.trim(),
-      sku: sku.trim() || `SKU-${Date.now().toString(36).toUpperCase()}`,
-      category,
-      packType,
-      unitsPerPack: Number(unitsPerPack) || 10,
-      currentStock: Number(currentStock) || 0,
-      reservedStock: 0,
-      minStockAlert: Number(minStockAlert) || 50,
-      color: selectedColor,
-      imageUrl: "/images/flavours/default-stick.png",
-      isAvailable: true,
-      isActive: true,
-    });
+      if (res && res.success === false) {
+        setErrorMessage(res.message || "Failed to create product on server.");
+        return;
+      }
 
-    onClose();
+      onClose();
+    } catch (err: any) {
+      setErrorMessage(err.message || "An unexpected error occurred.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -98,6 +112,11 @@ export function AddFlavourModal({
 
         {/* Modal Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs font-semibold text-slate-700">
+          {errorMessage && (
+            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 font-medium">
+              {errorMessage}
+            </div>
+          )}
           {/* Flavour Name & SKU */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -267,10 +286,20 @@ export function AddFlavourModal({
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#D83162] to-[#B51B47] hover:from-[#B51B47] hover:to-[#6D0C27] text-white text-xs font-bold shadow-md shadow-rose-900/20 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center gap-1.5 cursor-pointer"
+              disabled={isSubmitting}
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#D83162] to-[#B51B47] hover:from-[#B51B47] hover:to-[#6D0C27] text-white text-xs font-bold shadow-md shadow-rose-900/20 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Register &amp; Add Flavour</span>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Registering Flavour...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Register &amp; Add Flavour</span>
+                </>
+              )}
             </button>
           </div>
         </form>

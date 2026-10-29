@@ -26,16 +26,23 @@ interface AdminSidebarProps {
   onTabChange?: (tab: string) => void;
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
+  userRole?: string;
 }
 
 export function AdminSidebar({
   currentTab = "overview",
   onTabChange,
   isMobileOpen = false,
-  onCloseMobile
+  onCloseMobile,
+  userRole,
 }: AdminSidebarProps) {
   const pathname = usePathname();
   const { demoRole, setDemoRole, orders, products, dispatches, resetDemoData } = useAdmin();
+
+  // Quick role switcher is strictly restricted to Super Admin
+  const isSuperAdmin = userRole
+    ? userRole.toLowerCase().replace(/-/g, "_") === "super_admin"
+    : pathname.includes("super-admin") || demoRole === "super-admin";
 
   // Badges calculation
   const pendingOrdersCount = orders.filter(
@@ -44,16 +51,12 @@ export function AdminSidebar({
   const lowStockCount = products.filter(
     (p) => p.currentStock <= p.minStockAlert
   ).length;
-  const activeDispatchesCount = dispatches.filter(
-    (d) => d.status === "in-transit" || d.status === "loading"
-  ).length;
 
   const superAdminNav = [
     { id: "overview", label: "Overview", icon: LayoutDashboard },
     { id: "orders", label: "Branch Orders", icon: ClipboardList, badge: pendingOrdersCount > 0 ? pendingOrdersCount : undefined, badgeColor: "amber" },
     { id: "catalogue", label: "Product Catalogue", icon: Package },
     { id: "inventory", label: "Inventory", icon: Boxes, badge: lowStockCount > 0 ? `${lowStockCount} Low` : undefined, badgeColor: "rose" },
-    { id: "dispatches", label: "Dispatch & Logistics", icon: Truck, badge: activeDispatchesCount > 0 ? activeDispatchesCount : undefined, badgeColor: "indigo" },
     { id: "branches", label: "Branch Directory", icon: Store },
     { id: "reports", label: "Reports & Analytics", icon: BarChart3 },
     { id: "users", label: "User Management", icon: Users }
@@ -194,44 +197,14 @@ export function AdminSidebar({
           })}
         </nav>
 
-        {/* Bottom Switcher & Utility Box */}
+        {/* Bottom Utility Box */}
         <div className="p-3 border-t border-slate-800 bg-slate-950/40 space-y-2">
-          {/* Quick Role Toggle Bar */}
-          <div className="bg-slate-800/80 rounded-xl p-1.5 flex items-center justify-between text-[11px]">
-            <Link
-              href="/admin/super-admin"
-              className={`flex-1 text-center py-1 rounded-lg transition-colors font-medium ${
-                pathname.includes("super-admin")
-                  ? "bg-[#D83162] text-white font-bold"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              Factory
-            </Link>
-            <Link
-              href="/admin/branch"
-              className={`flex-1 text-center py-1 rounded-lg transition-colors font-medium ${
-                pathname.includes("branch")
-                  ? "bg-[#D83162] text-white font-bold"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              Branch
-            </Link>
-            <Link
-              href="/admin/delivery"
-              className={`flex-1 text-center py-1 rounded-lg transition-colors font-medium ${
-                pathname.includes("delivery")
-                  ? "bg-[#D83162] text-white font-bold"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              Driver
-            </Link>
-          </div>
-
           <button
             onClick={() => {
+              if (typeof window !== "undefined" && localStorage.getItem("icespot_auth_email")) {
+                alert("Active database session: Resetting demo data is disabled.");
+                return;
+              }
               if (confirm("Reset demo data to initial sample values? Any uncommitted changes will revert.")) {
                 resetDemoData();
               }

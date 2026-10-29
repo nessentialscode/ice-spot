@@ -143,10 +143,10 @@ export function PrintablePackingSlip({
                       {it.packType}
                     </td>
                     <td className="p-2 border-r border-slate-200 text-right font-semibold">
-                      {it.approvedPacks || it.requestedPacks}
+                      {it.approvedPacks !== undefined && it.approvedPacks !== null ? it.approvedPacks : it.requestedPacks}
                     </td>
                     <td className="p-2 border-r border-slate-200 text-right font-extrabold text-slate-900">
-                      {it.approvedUnits || it.requestedUnits}
+                      {it.approvedUnits !== undefined && it.approvedUnits !== null ? it.approvedUnits : it.requestedUnits}
                     </td>
                     <td className="p-2 text-center border-l border-slate-200 font-mono text-slate-300">
                       [ &nbsp; ]
@@ -168,10 +168,10 @@ export function PrintablePackingSlip({
                         {it.packType}
                       </td>
                       <td className="p-2 border-r border-slate-200 text-right font-semibold">
-                        {it.approvedPacks || it.requestedPacks}
+                        {it.approvedPacks !== undefined && it.approvedPacks !== null ? it.approvedPacks : it.requestedPacks}
                       </td>
                       <td className="p-2 border-r border-slate-200 text-right font-extrabold text-slate-900">
-                        {it.approvedUnits || it.requestedUnits}
+                        {it.approvedUnits !== undefined && it.approvedUnits !== null ? it.approvedUnits : it.requestedUnits}
                       </td>
                       <td className="p-2 text-center border-l border-slate-200 font-mono text-slate-300">
                         [ &nbsp; ]

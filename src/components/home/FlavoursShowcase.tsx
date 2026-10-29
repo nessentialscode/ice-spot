@@ -296,13 +296,21 @@ export default function FlavoursShowcase() {
                   aria-label={`${flavour.name}: ${flavour.tagline}`}
                   onClick={() => {
                     if (!hasMovedRef.current) {
-                      goToIndex(idx);
+                      if (isCenter) {
+                        openOrderModal(flavour.name);
+                      } else {
+                        goToIndex(idx);
+                      }
                     }
                   }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
-                      goToIndex(idx);
+                      if (isCenter) {
+                        openOrderModal(flavour.name);
+                      } else {
+                        goToIndex(idx);
+                      }
                     }
                   }}
                 >
@@ -318,7 +326,9 @@ export default function FlavoursShowcase() {
                         priority={idx < 4}
                       />
                     </div>
-                    <div className="showcase-label-chip">{flavour.name}</div>
+                    <div className="showcase-label-chip">
+                      {isCenter ? `${flavour.name} • Click to Inquire ✨` : flavour.name}
+                    </div>
                   </div>
                 </div>
               );
