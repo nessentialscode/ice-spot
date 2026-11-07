@@ -208,6 +208,7 @@ export function DeliveryStaffView({ userEmail, driverId, userRole }: DeliverySta
     activeDispatch?.notes || ""
   );
   const [orderFilter, setOrderFilter] = useState<"all" | OrderStatus>("all");
+  const [activeSection, setActiveSection] = useState<string>("VEHICLE DISPATCH & TRIP SETUP");
 
   // VEHICLE & SET DELIVERY MODAL STATE
   const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
@@ -1137,16 +1138,19 @@ export function DeliveryStaffView({ userEmail, driverId, userRole }: DeliverySta
     <AdminShell
       title="Youback Icespot Factory"
       subtitle="Reefer Fleet Logistics & Parlour Dispatch System"
-      roleBadgeText="DELIVERY STAFF"
+      roleBadgeText="STAFF ADMIN"
       roleBadgeColor="sky"
       userEmail={userEmail}
+      activeSection={activeSection}
+      onSectionChange={setActiveSection}
     >
       <div className="space-y-5 sm:space-y-6 w-full max-w-full">
         {/* ========================================================================= */}
         {/* SECTION 1: VEHICLE DISPATCH & TRIP SETUP                                  */}
         {/* Entering: vehicle number, time, delivering branches, total crates in van   */}
         {/* ========================================================================= */}
-        <section className="bg-white rounded-2xl sm:rounded-[24px] border border-rose-100/90 shadow-[0_4px_24px_rgba(216,49,98,0.04)] p-4 sm:p-6 transition-all">
+        {activeSection === "VEHICLE DISPATCH & TRIP SETUP" && (
+          <section className="bg-white rounded-2xl sm:rounded-[24px] border border-rose-100/90 shadow-[0_4px_24px_rgba(216,49,98,0.04)] p-4 sm:p-6 transition-all">
           {/* Section 1 Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-4 sm:pb-5 sm:mb-5 border-b border-slate-100 gap-3">
             <div className="flex items-center gap-3 min-w-0">
@@ -1472,12 +1476,14 @@ export function DeliveryStaffView({ userEmail, driverId, userRole }: DeliverySta
             </div>
           </div>
         </section>
+        )}
 
         {/* ========================================================================= */}
         {/* SECTION 2: SELECTED BRANCHES OPTIONS (Route Sequence & Stop Selector)      */}
         {/* "second section, selected branches options should appear in the second..." */}
         {/* ========================================================================= */}
-        <section className="bg-white rounded-2xl sm:rounded-[24px] border border-rose-100/90 shadow-[0_4px_24px_rgba(216,49,98,0.04)] p-4 sm:p-6 transition-all">
+        {activeSection === "BRANCHES & ROUTE STOP" && (
+          <section className="bg-white rounded-2xl sm:rounded-[24px] border border-rose-100/90 shadow-[0_4px_24px_rgba(216,49,98,0.04)] p-4 sm:p-6 transition-all">
           {/* Section 2 Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-4 sm:pb-5 sm:mb-5 border-b border-slate-100 gap-2">
             <div className="flex items-center gap-3 min-w-0">
@@ -1616,6 +1622,7 @@ export function DeliveryStaffView({ userEmail, driverId, userRole }: DeliverySta
                       onClick={(e) => {
                         e.stopPropagation();
                         setActiveBranchId(branchId);
+                        setActiveSection("ORDERED STOCK");
                       }}
                       className={`text-[11px] font-bold px-2.5 py-1 rounded-lg transition-colors cursor-pointer flex items-center gap-1 ${
                         isSelectedForView
@@ -1650,13 +1657,15 @@ export function DeliveryStaffView({ userEmail, driverId, userRole }: DeliverySta
             }))}
           </div>
         </section>
+        )}
 
         {/* ========================================================================= */}
         {/* SECTION 3: SPECIFIC BRANCH ORDER PRODUCTS                                 */}
         {/* "Third section, when select a specific branch in the second section,      */}
         {/*  third section should show all the order products of that sepcific branch"*/}
         {/* ========================================================================= */}
-        <section className="bg-white rounded-2xl sm:rounded-[24px] border border-rose-100/90 shadow-[0_4px_24px_rgba(216,49,98,0.04)] p-4 sm:p-6 transition-all">
+        {activeSection === "ORDERED STOCK" && (
+          <section className="bg-white rounded-2xl sm:rounded-[24px] border border-rose-100/90 shadow-[0_4px_24px_rgba(216,49,98,0.04)] p-4 sm:p-6 transition-all">
           {/* Section 3 Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-4 sm:pb-5 sm:mb-5 border-b border-slate-100 gap-3">
             <div className="flex items-center gap-3 min-w-0">
@@ -1689,6 +1698,31 @@ export function DeliveryStaffView({ userEmail, driverId, userRole }: DeliverySta
               </a>
             </div>
           </div>
+
+          {/* Branch Stop Selector Pills if multiple stops in trip */}
+          {selectedBranchIds.length > 1 && (
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-3">
+              <span className="text-[11px] font-bold text-slate-500 whitespace-nowrap">Switch Stop:</span>
+              {selectedBranchIds.map((bId, idx) => {
+                const bDetails = getBranchDetails(bId);
+                const isCurrent = activeBranchId === bId;
+                return (
+                  <button
+                    key={bId}
+                    type="button"
+                    onClick={() => setActiveBranchId(bId)}
+                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                      isCurrent
+                        ? "bg-[#BD1F49] text-white shadow-xs"
+                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    }`}
+                  >
+                    {idx + 1}. {bDetails.name}
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           {/* Location & Manifest Summary Banner */}
           <div className="mb-4 p-3 sm:p-3.5 bg-gradient-to-r from-slate-50 to-rose-50/40 rounded-xl border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
@@ -1997,14 +2031,16 @@ export function DeliveryStaffView({ userEmail, driverId, userRole }: DeliverySta
             </div>
           </div>
         </section>
+        )}
 
         {/* ========================================================================= */}
         {/* SECTION 4: INCOMING PARLOUR ORDERS & REPLENISHMENT PROCESSING             */}
         {/* ========================================================================= */}
-        <section
-          id="section-incoming-orders"
-          className="bg-white rounded-2xl sm:rounded-[22px] border border-sky-100 shadow-[0_4px_24px_rgba(14,165,233,0.04)] p-4 sm:p-7 space-y-6"
-        >
+        {activeSection === "INCOMING BRANCH ORDERS" && (
+          <section
+            id="section-incoming-orders"
+            className="bg-white rounded-2xl sm:rounded-[22px] border border-sky-100 shadow-[0_4px_24px_rgba(14,165,233,0.04)] p-4 sm:p-7 space-y-6"
+          >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-sky-50 border border-sky-100 text-sky-700 flex items-center justify-center flex-shrink-0">
@@ -2247,6 +2283,7 @@ export function DeliveryStaffView({ userEmail, driverId, userRole }: DeliverySta
                                   handleSelectDispatch(matchingDispatch.id);
                                 }
                               }
+                              setActiveSection("BRANCHES & ROUTE STOP");
                             }}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer w-full justify-center"
                           >
@@ -2273,6 +2310,7 @@ export function DeliveryStaffView({ userEmail, driverId, userRole }: DeliverySta
             );
           })()}
         </section>
+        )}
       </div>
 
       {/* ========================================================================= */}

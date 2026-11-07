@@ -2,227 +2,310 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useAdmin } from "@/context/AdminContext";
 import {
   LayoutDashboard,
   ClipboardList,
-  Package,
   Boxes,
   Truck,
   Store,
-  BarChart3,
-  Users,
-  RotateCcw,
+  MapPin,
   ExternalLink,
-  ShieldAlert,
-  ArrowRightLeft,
-  CheckSquare,
-  MapPin
+  RotateCcw,
+  X
 } from "lucide-react";
 
+export interface NavItem {
+  id: string;
+  label: string;
+  icon: React.ElementType;
+  badge?: string | number;
+  badgeColor?: "rose" | "amber" | "sky" | "slate" | "indigo";
+}
+
 interface AdminSidebarProps {
-  currentTab?: string;
-  onTabChange?: (tab: string) => void;
+  currentSection?: string;
+  onSectionChange?: (section: string) => void;
+  sections?: NavItem[];
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
+  roleBadgeText?: string;
+  roleBadgeColor?: "rose" | "amber" | "sky";
+  userEmail?: string;
+  // Legacy compatibility props
+  currentTab?: string;
+  onTabChange?: (tab: string) => void;
   userRole?: string;
 }
 
 export function AdminSidebar({
-  currentTab = "overview",
-  onTabChange,
+  currentSection,
+  onSectionChange,
+  sections,
   isMobileOpen = false,
   onCloseMobile,
+  roleBadgeText,
+  roleBadgeColor = "rose",
+  userEmail,
+  currentTab,
+  onTabChange,
   userRole,
 }: AdminSidebarProps) {
   const pathname = usePathname();
-  const { demoRole, setDemoRole, orders, products, dispatches, resetDemoData } = useAdmin();
+  const { demoRole, orders, products, dispatches, resetDemoData } = useAdmin();
 
-  // Quick role switcher is strictly restricted to Super Admin
-  const isSuperAdmin = userRole
-    ? userRole.toLowerCase().replace(/-/g, "_") === "super_admin"
-    : pathname.includes("super-admin") || demoRole === "super-admin";
+  // Determine active section (supports new currentSection or legacy currentTab)
+  const activeSectionId = currentSection || currentTab;
 
-  // Badges calculation
+  // Real-time badge counts
   const pendingOrdersCount = orders.filter(
     (o) => o.status === "submitted" || o.status === "under-review"
   ).length;
   const lowStockCount = products.filter(
     (p) => p.currentStock <= p.minStockAlert
   ).length;
+  const activeDispatchesCount = dispatches.filter(
+    (d) => d.status === "in-transit" || d.status === "loading"
+  ).length;
 
-  const superAdminNav = [
-    { id: "overview", label: "Overview", icon: LayoutDashboard },
-    { id: "orders", label: "Branch Orders", icon: ClipboardList, badge: pendingOrdersCount > 0 ? pendingOrdersCount : undefined, badgeColor: "amber" },
-    { id: "catalogue", label: "Product Catalogue", icon: Package },
-    { id: "inventory", label: "Inventory", icon: Boxes, badge: lowStockCount > 0 ? `${lowStockCount} Low` : undefined, badgeColor: "rose" },
-    { id: "branches", label: "Branch Directory", icon: Store },
-    { id: "reports", label: "Reports & Analytics", icon: BarChart3 },
-    { id: "users", label: "User Management", icon: Users }
+  // 1. EXACT SUPER ADMIN SECTIONS
+  const superAdminNav: NavItem[] = [
+    { id: "DASHBOARD", label: "DASHBOARD", icon: LayoutDashboard },
+    { id: "BRANCH NETWORK", label: "BRANCH NETWORK", icon: Store },
+    {
+      id: "BRANCH ORDERS",
+      label: "BRANCH ORDERS",
+      icon: ClipboardList,
+      badge: pendingOrdersCount > 0 ? pendingOrdersCount : undefined,
+      badgeColor: "amber",
+    },
+    {
+      id: "FACTORY INVENTORY",
+      label: "FACTORY INVENTORY",
+      icon: Boxes,
+      badge: lowStockCount > 0 ? `${lowStockCount} Low` : undefined,
+      badgeColor: "rose",
+    },
+    {
+      id: "VEHICLE STATUS",
+      label: "VEHICLE STATUS",
+      icon: Truck,
+      badge: activeDispatchesCount > 0 ? activeDispatchesCount : undefined,
+      badgeColor: "sky",
+    },
   ];
 
-  const branchAdminNav = [
-    { id: "dashboard", label: "Branch Dashboard", icon: LayoutDashboard },
-    { id: "order", label: "Weekly Stock Order", icon: ClipboardList },
-    { id: "history", label: "Order History", icon: Store },
-    { id: "receive", label: "Receive Shipment", icon: CheckSquare }
+  // 2. EXACT BRANCH ADMIN SECTIONS
+  const branchAdminNav: NavItem[] = [
+    { id: "DASHBOARD", label: "DASHBOARD", icon: LayoutDashboard },
+    { id: "WEEKLY STOCK ORDER", label: "WEEKLY STOCK ORDER", icon: ClipboardList },
+    { id: "INCOMING FACTORY DELIVERY", label: "INCOMING FACTORY DELIVERY", icon: Truck },
   ];
 
-  const deliveryStaffNav = [
-    { id: "dashboard", label: "Delivery Dashboard", icon: LayoutDashboard },
-    { id: "dispatches", label: "Assigned Trips", icon: Truck },
-    { id: "loading", label: "Loading Checklist", icon: CheckSquare },
-    { id: "route", label: "Trip Route & Stops", icon: MapPin }
+  // 3. EXACT STAFF ADMIN SECTIONS
+  const staffAdminNav: NavItem[] = [
+    { id: "VEHICLE DISPATCH & TRIP SETUP", label: "VEHICLE DISPATCH & TRIP SETUP", icon: Truck },
+    { id: "BRANCHES & ROUTE STOP", label: "BRANCHES & ROUTE STOP", icon: MapPin },
+    { id: "ORDERED STOCK", label: "ORDERED STOCK", icon: Boxes },
+    {
+      id: "INCOMING BRANCH ORDERS",
+      label: "INCOMING BRANCH ORDERS",
+      icon: ClipboardList,
+      badge: pendingOrdersCount > 0 ? pendingOrdersCount : undefined,
+      badgeColor: "amber",
+    },
   ];
 
-  let currentNavItems = superAdminNav;
-  let rootHref = "/admin/super-admin";
-
-  if (pathname.includes("/admin/branch")) {
-    currentNavItems = branchAdminNav;
-    rootHref = "/admin/branch";
-  } else if (pathname.includes("/admin/delivery")) {
-    currentNavItems = deliveryStaffNav;
-    rootHref = "/admin/delivery";
+  // Pick navigation items
+  let navItems = sections;
+  if (!navItems || navItems.length === 0) {
+    if (pathname?.includes("/admin/branch") || roleBadgeText?.toUpperCase().includes("BRANCH")) {
+      navItems = branchAdminNav;
+    } else if (
+      pathname?.includes("/admin/delivery") ||
+      roleBadgeText?.toUpperCase().includes("STAFF") ||
+      roleBadgeText?.toUpperCase().includes("DELIVERY")
+    ) {
+      navItems = staffAdminNav;
+    } else {
+      navItems = superAdminNav;
+    }
   }
 
-  const roleLabel =
-    demoRole === "super-admin"
-      ? "Super Admin (Varavoor)"
-      : demoRole === "branch-admin"
-      ? "Branch Admin (Franchise)"
-      : "Delivery Staff (Logistics)";
+  // Active role text
+  const currentRoleBadge =
+    roleBadgeText ||
+    (pathname?.includes("/admin/branch")
+      ? "BRANCH ADMIN"
+      : pathname?.includes("/admin/delivery")
+      ? "STAFF ADMIN"
+      : "SUPER ADMIN");
+
+  const portalHomeHref = pathname?.includes("/admin/branch")
+    ? "/admin/branch"
+    : pathname?.includes("/admin/delivery")
+    ? "/admin/delivery"
+    : "/admin/super-admin";
+
+  const handleItemClick = (id: string) => {
+    if (typeof onSectionChange === "function") {
+      onSectionChange(id);
+    }
+    if (typeof onTabChange === "function") {
+      onTabChange(id);
+    }
+    if (typeof onCloseMobile === "function") {
+      onCloseMobile();
+    }
+  };
+
+  const badgeColorClasses: Record<string, string> = {
+    rose: "bg-rose-950/80 text-rose-300 border border-rose-800/80",
+    amber: "bg-amber-950/80 text-amber-300 border border-amber-800/80",
+    sky: "bg-sky-950/80 text-sky-300 border border-sky-800/80",
+    indigo: "bg-indigo-950/80 text-indigo-300 border border-indigo-800/80",
+    slate: "bg-slate-800 text-slate-300 border border-slate-700",
+  };
+
+  const sidebarContent = (
+    <div className="flex flex-col h-full w-[260px] bg-[#0F172A] text-slate-300 border-r border-slate-800/90 select-none">
+      {/* Brand Header */}
+      <div className="h-16 px-4 border-b border-slate-800/90 flex items-center justify-between flex-shrink-0 bg-slate-950/40">
+        <Link href={portalHomeHref} className="flex items-center hover:opacity-90 transition-opacity">
+          <Image
+            src="/assets/icespot-brand-logo.png"
+            alt="IceSpot - Live in Freshness"
+            width={140}
+            height={48}
+            priority
+            className="h-10 w-auto object-contain"
+          />
+        </Link>
+        {onCloseMobile && (
+          <button
+            onClick={onCloseMobile}
+            type="button"
+            className="lg:hidden text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800/80 transition-colors"
+            title="Close sidebar"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
+      {/* Role Pill Header */}
+      <div className="px-4 py-2.5 bg-slate-950/70 border-b border-slate-800/80 flex items-center justify-between">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse flex-shrink-0"></span>
+          <span className="text-[11px] font-black uppercase tracking-wider text-white truncate">
+            {currentRoleBadge}
+          </span>
+        </div>
+        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest bg-slate-800/90 px-1.5 py-0.5 rounded">
+          PORTAL
+        </span>
+      </div>
+
+      {/* Navigation Sections */}
+      <nav className="flex-1 px-2.5 py-3.5 space-y-1 overflow-y-auto">
+        <div className="px-2 pb-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+          Navigation
+        </div>
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = activeSectionId === item.id;
+
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => handleItemClick(item.id)}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                isActive
+                  ? "bg-[#BD1F49] text-white shadow-xs"
+                  : "text-slate-300 hover:text-white hover:bg-slate-800/70"
+              }`}
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                {Icon && (typeof Icon === "function" || typeof Icon === "object") ? (
+                  <Icon
+                    className={`w-4 h-4 flex-shrink-0 ${
+                      isActive ? "text-white" : "text-slate-400 group-hover:text-slate-200"
+                    }`}
+                  />
+                ) : null}
+                <span className="truncate text-[11px] font-extrabold">{item.label}</span>
+              </div>
+
+              {item.badge !== undefined && (
+                <span
+                  className={`text-[9px] font-black px-1.5 py-0.5 rounded-full flex-shrink-0 ${
+                    item.badgeColor && badgeColorClasses[item.badgeColor]
+                      ? badgeColorClasses[item.badgeColor]
+                      : "bg-slate-800 text-slate-300 border border-slate-700"
+                  }`}
+                >
+                  {item.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* Sidebar Bottom Utility */}
+      <div className="p-3 border-t border-slate-800/90 bg-slate-950/60 space-y-1.5 flex-shrink-0">
+        <Link
+          href="/"
+          className="w-full flex items-center justify-center gap-1.5 py-2 px-3 text-[11px] font-bold text-slate-400 hover:text-white hover:bg-slate-800/60 rounded-xl transition-colors border border-slate-800"
+        >
+          <ExternalLink className="w-3.5 h-3.5" />
+          <span>Public Website</span>
+        </Link>
+
+        <button
+          type="button"
+          onClick={() => {
+            if (typeof window !== "undefined" && localStorage.getItem("icespot_auth_email")) {
+              alert("Active database session: Resetting demo data is disabled.");
+              return;
+            }
+            if (confirm("Reset demo data to initial sample values? Any uncommitted changes will revert.")) {
+              resetDemoData();
+            }
+          }}
+          className="w-full flex items-center justify-center gap-1.5 py-1.5 text-[10px] font-medium text-slate-400 hover:text-slate-200 transition-colors"
+        >
+          <RotateCcw className="w-3 h-3" />
+          <span>Reset Demo Data</span>
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <>
-      {/* Mobile Backdrop */}
+      {/* Desktop Persistent Expanded Sidebar (Fixed at 260px) */}
+      <aside className="hidden lg:flex fixed top-0 bottom-0 left-0 z-40 w-[260px]">
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile Backdrop & Drawer */}
       {isMobileOpen && (
         <div
           onClick={onCloseMobile}
-          className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm lg:hidden transition-opacity"
+          className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs lg:hidden transition-opacity"
         />
       )}
 
-      {/* Sidebar Container */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 w-64 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+        className={`fixed top-0 bottom-0 left-0 z-50 w-[260px] lg:hidden transition-transform duration-300 ease-in-out ${
           isMobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        {/* Brand Header */}
-        <div className="h-16 px-5 border-b border-slate-800/80 flex items-center justify-between">
-          <Link href="/admin" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#D83162] text-white font-extrabold flex items-center justify-center text-sm shadow-sm">
-              IS
-            </div>
-            <div>
-              <div className="text-sm font-extrabold text-white tracking-tight leading-none flex items-center gap-1.5">
-                Icespot Hub
-                <span className="text-[10px] font-bold bg-[#D83162]/20 text-[#FF9EBB] px-1.5 py-0.5 rounded">
-                  DEMO
-                </span>
-              </div>
-              <div className="text-[11px] text-slate-400 font-medium">Varavoor Factory Operations</div>
-            </div>
-          </Link>
-          {onCloseMobile && (
-            <button
-              onClick={onCloseMobile}
-              className="lg:hidden text-slate-400 hover:text-white p-1 text-sm"
-            >
-              ✕
-            </button>
-          )}
-        </div>
-
-        {/* Current Active Role Pill */}
-        <div className="px-4 py-3 bg-slate-950/60 border-b border-slate-800/80">
-          <div className="text-[10px] uppercase font-bold tracking-wider text-slate-500 mb-1 flex items-center justify-between">
-            <span>Demo Mode Context</span>
-            <Link
-              href="/admin"
-              className="text-[#FF9EBB] hover:underline flex items-center gap-1 text-[10px]"
-            >
-              <ArrowRightLeft className="w-3 h-3" /> Switch
-            </Link>
-          </div>
-          <div className="text-xs font-semibold text-white flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            {roleLabel}
-          </div>
-        </div>
-
-        {/* Navigation Items */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {currentNavItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = currentTab === item.id;
-
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  if (onTabChange) {
-                    onTabChange(item.id);
-                  }
-                  if (onCloseMobile) onCloseMobile();
-                }}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all ${
-                  isActive
-                    ? "bg-[#D83162] text-white shadow-sm font-semibold"
-                    : "text-slate-300 hover:bg-slate-800 hover:text-white"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-slate-400"}`} />
-                  <span>{item.label}</span>
-                </div>
-
-                {item.badge && (
-                  <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      item.badgeColor === "rose"
-                        ? "bg-rose-950 text-rose-300 border border-rose-800"
-                        : item.badgeColor === "amber"
-                        ? "bg-amber-950 text-amber-300 border border-amber-800"
-                        : "bg-indigo-950 text-indigo-300 border border-indigo-800"
-                    }`}
-                  >
-                    {item.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Bottom Utility Box */}
-        <div className="p-3 border-t border-slate-800 bg-slate-950/40 space-y-2">
-          <button
-            onClick={() => {
-              if (typeof window !== "undefined" && localStorage.getItem("icespot_auth_email")) {
-                alert("Active database session: Resetting demo data is disabled.");
-                return;
-              }
-              if (confirm("Reset demo data to initial sample values? Any uncommitted changes will revert.")) {
-                resetDemoData();
-              }
-            }}
-            className="w-full flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 rounded-lg transition-colors"
-          >
-            <RotateCcw className="w-3 h-3" />
-            Reset Demo Data
-          </button>
-
-          <Link
-            href="/"
-            className="w-full flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-semibold text-slate-400 hover:text-[#FF9EBB] transition-colors border-t border-slate-800 pt-2"
-          >
-            <ExternalLink className="w-3 h-3" />
-            Return to Public Website
-          </Link>
-        </div>
+        {sidebarContent}
       </aside>
     </>
   );

@@ -13,7 +13,8 @@ import {
   RotateCcw,
   AlertCircle,
   CheckCircle2,
-  LogOut
+  LogOut,
+  Loader2
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { signOutAction } from "@/lib/actions/auth";
@@ -29,11 +30,14 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [activeSession, setActiveSession] = useState<{
     email: string;
     role: string;
   } | null>(null);
+
+  const isLocked = isLoading || isVerified;
 
   // Surface any redirect error codes safely
   useEffect(() => {
@@ -113,6 +117,7 @@ function LoginForm() {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLocked) return;
     setErrorMessage(null);
 
     const normalizedEmail = email.toLowerCase().trim();
@@ -145,6 +150,7 @@ function LoginForm() {
             : authError?.message || "Authentication failed. Please try again."
         );
         setIsLoading(false);
+        setIsVerified(false);
         return;
       }
 
@@ -166,6 +172,7 @@ function LoginForm() {
         await supabase.auth.signOut();
         setErrorMessage("No authorized profile found for this account. Access denied.");
         setIsLoading(false);
+        setIsVerified(false);
         return;
       }
 
@@ -173,6 +180,7 @@ function LoginForm() {
         await supabase.auth.signOut();
         setErrorMessage("Your administrative account is deactivated. Please contact the factory administrator.");
         setIsLoading(false);
+        setIsVerified(false);
         return;
       }
 
@@ -192,14 +200,18 @@ function LoginForm() {
         await supabase.auth.signOut();
         setErrorMessage("Your profile does not have an assigned admin dashboard role.");
         setIsLoading(false);
+        setIsVerified(false);
         return;
       }
 
+      // Verified successfully — maintain locked state throughout transition
+      setIsVerified(true);
       router.push(targetDashboard);
       router.refresh();
     } catch {
       setErrorMessage("Unable to connect to authentication server. Please check your connection.");
       setIsLoading(false);
+      setIsVerified(false);
     }
   };
 
@@ -281,7 +293,7 @@ function LoginForm() {
                   <button
                     type="button"
                     onClick={handleSignOutActiveSession}
-                    disabled={isLoading}
+                    disabled={isLocked}
                     className="py-1.5 px-3 bg-white hover:bg-slate-100 border border-amber-200 text-amber-900 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs disabled:opacity-50"
                   >
                     <LogOut className="w-3.5 h-3.5 text-amber-700" />
@@ -311,9 +323,11 @@ function LoginForm() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    disabled={isLocked}
+                    readOnly={isLocked}
                     placeholder="admin@icespot.com"
                     autoComplete="email"
-                    className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-800 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:border-[#E22F62] focus:ring-4 focus:ring-[#E22F62]/10 transition-all shadow-sm"
+                    className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-800 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:border-[#E22F62] focus:ring-4 focus:ring-[#E22F62]/10 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed disabled:border-slate-200 transition-all shadow-sm"
                   />
                 </div>
               </div>
@@ -336,14 +350,17 @@ function LoginForm() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    disabled={isLocked}
+                    readOnly={isLocked}
                     placeholder="••••••••••••"
                     autoComplete="current-password"
-                    className="w-full pl-10 pr-11 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-800 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:border-[#E22F62] focus:ring-4 focus:ring-[#E22F62]/10 transition-all shadow-sm tracking-normal"
+                    className="w-full pl-10 pr-11 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-800 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:border-[#E22F62] focus:ring-4 focus:ring-[#E22F62]/10 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed disabled:border-slate-200 transition-all shadow-sm tracking-normal"
                   />
                   <button
                     type="button"
+                    disabled={isLocked}
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none transition-colors cursor-pointer"
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
                     aria-label={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? (
@@ -358,10 +375,22 @@ function LoginForm() {
               {/* Sign In Button */}
               <button
                 type="submit"
-                disabled={isLoading}
-                className="w-full !mt-5 py-3 px-4 bg-[#0F172A] hover:bg-[#1E293B] text-white text-sm font-bold rounded-xl shadow-md transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99] disabled:opacity-75"
+                disabled={isLocked}
+                className="w-full !mt-5 py-3 px-4 bg-[#0F172A] hover:bg-[#1E293B] text-white text-sm font-bold rounded-xl shadow-md transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99] disabled:opacity-75 disabled:cursor-not-allowed"
               >
-                <span>{isLoading ? "Verifying Credentials..." : "Sign In to Admin Portal"}</span>
+                {isVerified ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 animate-in fade-in" />
+                    <span>Credentials Verified — Entering Portal...</span>
+                  </>
+                ) : isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-slate-300" />
+                    <span>Verifying Credentials...</span>
+                  </>
+                ) : (
+                  <span>Sign In to Admin Portal</span>
+                )}
               </button>
             </form>
 

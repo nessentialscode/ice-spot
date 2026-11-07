@@ -1,6 +1,6 @@
 "use client";
 
-import React, { ReactNode, useState, useEffect } from "react";
+import React, { ReactNode, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
@@ -9,9 +9,10 @@ import { createClient } from "@/lib/supabase/client";
 import {
   RotateCcw,
   ExternalLink,
-  LogOut
+  LogOut,
+  Menu
 } from "lucide-react";
-
+import { AdminSidebar, NavItem } from "./AdminSidebar";
 import { signOutAction } from "@/lib/actions/auth";
 
 interface AdminShellProps {
@@ -21,6 +22,10 @@ interface AdminShellProps {
   roleBadgeColor?: "rose" | "amber" | "sky";
   userEmail?: string;
   children: ReactNode;
+  // Navigation / section props
+  activeSection?: string;
+  onSectionChange?: (section: string) => void;
+  sections?: NavItem[];
   // Legacy optional props to prevent type breaks
   currentTab?: string;
   onTabChange?: (tab: string) => void;
@@ -32,12 +37,18 @@ export function AdminShell({
   roleBadgeText,
   roleBadgeColor = "rose",
   userEmail,
-  children
+  children,
+  activeSection,
+  onSectionChange,
+  sections,
+  currentTab,
+  onTabChange,
 }: AdminShellProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { resetDemoData, showToast } = useAdmin();
   const [isExiting, setIsExiting] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Link logo to current portal home rather than unauthenticated login page
   const portalHomeHref = pathname?.includes("/admin/branch")
@@ -109,90 +120,115 @@ export function AdminShell({
   };
 
   return (
-    <div className="min-h-screen bg-[#FFF7F9] text-slate-800 flex flex-col font-sans antialiased selection:bg-rose-100 selection:text-[#BD1F49] max-w-full overflow-x-hidden">
-      {/* Top Navigation Bar - Responsive on all mobile devices */}
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-rose-100/90 px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3.5 shadow-[0_2px_12px_rgba(216,49,98,0.03)] w-full max-w-full">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4 w-full min-w-0">
-          {/* Left: Brand Logo + Title + Role Badge + Subtitle */}
-          <div className="flex items-center gap-2 sm:gap-3.5 min-w-0 flex-1">
-            <Link href={portalHomeHref} className="flex-shrink-0 hover:opacity-90 transition-opacity">
-              <Image
-                src="/assets/icespot-brand-logo.png"
-                alt="YouBack Icespot"
-                width={120}
-                height={58}
-                priority
-                className="h-7 sm:h-9 md:h-10 w-auto object-contain"
-              />
-            </Link>
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-800 flex flex-col font-sans antialiased selection:bg-rose-100 selection:text-[#BD1F49] max-w-full overflow-x-hidden">
+      {/* Persistent Left Sidebar Component (Desktop 260px fixed + Mobile Drawer) */}
+      <AdminSidebar
+        currentSection={activeSection || currentTab}
+        onSectionChange={onSectionChange || onTabChange}
+        sections={sections}
+        isMobileOpen={isMobileSidebarOpen}
+        onCloseMobile={() => setIsMobileSidebarOpen(false)}
+        roleBadgeText={roleBadgeText}
+        roleBadgeColor={roleBadgeColor}
+        userEmail={userEmail}
+      />
 
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                <span className="text-xs sm:text-base font-black text-slate-900 tracking-tight leading-tight truncate max-w-[130px] sm:max-w-none">
-                  {title}
-                </span>
-                <span
-                  className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider whitespace-nowrap ${badgeColorClasses}`}
-                >
-                  {activeRoleBadge}
-                </span>
+      {/* Main Container Offset by Left Sidebar (260px on desktop) */}
+      <div className="lg:pl-[260px] flex-1 flex flex-col min-w-0 w-full">
+        {/* Top Header */}
+        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3.5 shadow-xs w-full max-w-full">
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4 w-full min-w-0">
+            {/* Left: Mobile Menu Toggle + Brand Logo + Title + Role Badge */}
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+              <button
+                type="button"
+                onClick={() => setIsMobileSidebarOpen(true)}
+                className="lg:hidden p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer flex-shrink-0"
+                title="Open navigation menu"
+                aria-label="Open navigation menu"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+
+              <Link href={portalHomeHref} className="flex-shrink-0 hover:opacity-90 transition-opacity lg:hidden">
+                <Image
+                  src="/assets/icespot-brand-logo.png"
+                  alt="YouBack Icespot"
+                  width={100}
+                  height={48}
+                  priority
+                  className="h-7 w-auto object-contain"
+                />
+              </Link>
+
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                  <span className="text-xs sm:text-base font-black text-slate-900 tracking-tight leading-tight truncate max-w-[130px] sm:max-w-none">
+                    {title}
+                  </span>
+                  <span
+                    className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider whitespace-nowrap ${badgeColorClasses}`}
+                  >
+                    {activeRoleBadge}
+                  </span>
+                </div>
+                <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium truncate mt-0.5 hidden xs:block sm:block">
+                  {subtitle}
+                </p>
               </div>
-              <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium truncate mt-0.5 hidden xs:block sm:block">
-                {subtitle}
-              </p>
-            </div>
-          </div>
-
-          {/* Right: User Email Pill + Refresh + Public Website + Exit Portal Action */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
-            {/* User Email Chip */}
-            <div className="hidden lg:inline-flex items-center px-3 py-1.5 rounded-xl bg-slate-100/90 text-slate-700 text-xs font-semibold border border-slate-200/70">
-              {activeEmail}
             </div>
 
-            {/* Refresh Action */}
-            <button
-              onClick={handleRefresh}
-              type="button"
-              className="p-1.5 sm:p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200/60 hover:border-slate-300 transition-colors cursor-pointer"
-              title="Refresh / Reset Prototype Data"
-            >
-              <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            </button>
+            {/* Right: User Email Pill + Refresh + Public Website + Exit Portal Action */}
+            <div className="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
+              {/* User Email Chip */}
+              <div className="hidden sm:inline-flex items-center px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200">
+                {activeEmail}
+              </div>
 
-            {/* Public Website Button */}
-            <Link
-              href="/"
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-sky-200 bg-sky-50/50 hover:bg-sky-50 text-sky-800 text-xs font-bold transition-colors"
-            >
-              <ExternalLink className="w-3.5 h-3.5 text-sky-600" />
-              <span>Public Website</span>
-            </Link>
+              {/* Refresh Action */}
+              <button
+                onClick={handleRefresh}
+                type="button"
+                className="p-1.5 sm:p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 transition-colors cursor-pointer"
+                title="Refresh operational data"
+              >
+                <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </button>
 
-            {/* Clearly Labeled Exit Portal Action */}
-            <button
-              onClick={handleExitPortal}
-              disabled={isExiting}
-              type="button"
-              title="Terminate session and exit admin portal"
-              className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-xl border border-rose-200 bg-white hover:bg-rose-50 text-[#BD1F49] text-xs font-bold transition-all cursor-pointer shadow-xs whitespace-nowrap disabled:opacity-60"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>{isExiting ? "Exiting..." : "Exit Portal"}</span>
-            </button>
+              {/* Public Website Button */}
+              <Link
+                href="/"
+                className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-sky-200 bg-sky-50/50 hover:bg-sky-50 text-sky-800 text-xs font-bold transition-colors"
+              >
+                <ExternalLink className="w-3.5 h-3.5 text-sky-600" />
+                <span>Public Website</span>
+              </Link>
+
+              {/* Exit Portal Action */}
+              <button
+                onClick={handleExitPortal}
+                disabled={isExiting}
+                type="button"
+                title="Terminate session and exit admin portal"
+                className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-xl border border-rose-200 bg-white hover:bg-rose-50 text-[#BD1F49] text-xs font-bold transition-all cursor-pointer shadow-xs whitespace-nowrap disabled:opacity-60"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>{isExiting ? "Exiting..." : "Exit Portal"}</span>
+              </button>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Main Portal Body */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-5 sm:space-y-6 max-w-full overflow-x-hidden">
-        {children}
-      </main>
+        {/* Main Workspace Body */}
+        <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-7 space-y-6 max-w-full overflow-x-hidden">
+          {children}
+        </main>
 
-      {/* Clean Down End Footer */}
-      <footer className="border-t border-rose-100/70 bg-white/70 py-4 px-6 text-center text-xs text-slate-400 font-medium">
-        &copy; 2026 Youback Icespot Factory &bull; Varavoor, Thrissur, Kerala
-      </footer>
+        {/* Enterprise Footer */}
+        <footer className="border-t border-slate-200/80 bg-white/70 py-4 px-6 text-center text-xs text-slate-400 font-medium">
+          &copy; 2026 Youback Icespot Factory &bull; Varavoor, Thrissur, Kerala
+        </footer>
+      </div>
     </div>
   );
 }
