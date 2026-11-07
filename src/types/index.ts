@@ -25,6 +25,7 @@ export type BranchStatus = 'factory' | 'confirmed' | 'candidate';
 
 export interface Branch {
   id: string;
+  code?: string;
   name: string;
   location: string;
   district: string;

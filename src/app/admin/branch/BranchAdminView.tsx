@@ -21,7 +21,8 @@ import {
   Info,
   Loader2,
   ClipboardList,
-  ArrowRight
+  ArrowRight,
+  Calendar
 } from "lucide-react";
 
 interface BranchAdminViewProps {
@@ -116,8 +117,8 @@ export function BranchAdminView({
         : null)
     : null;
 
-  // Use authoritative products from context (fallback to server initialProducts)
-  const products = contextProducts && contextProducts.length > 0 ? contextProducts : initialProducts || [];
+  // Authoritative database products from server (strict database UUID conformance)
+  const products = initialProducts ?? [];
 
   // Order formulation state
   const [orderQuantities, setOrderQuantities] = useState<Record<string, number>>(() => {
@@ -128,7 +129,15 @@ export function BranchAdminView({
     return initial;
   });
 
-  const [requestedDate, setRequestedDate] = useState("Next Scheduled Run (Varavoor Logistics)");
+  const getTodayDateString = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const [requestedDate, setRequestedDate] = useState(() => getTodayDateString());
   const [orderNotes, setOrderNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -157,6 +166,11 @@ export function BranchAdminView({
   const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (products.length === 0) {
+      showToast("Submission blocked: No active database products available to order.", "error");
+      return;
+    }
+
     if (!isBranchAuthorized || !effectiveBranchId || !UUID_REGEX.test(effectiveBranchId)) {
       showToast("Submission blocked: Profile is not linked to an authorized branch record.", "error");
       return;
@@ -183,6 +197,20 @@ export function BranchAdminView({
         };
       });
 
+    // Phase 3 — Validate product identifiers: ensure every product has a valid UUID
+    const invalidItem = items.find((it) => !it.productId || !UUID_REGEX.test(it.productId));
+    if (invalidItem) {
+      const errMsg = `Invalid product identifier format: "${invalidItem.productId}". Valid database product UUID required.`;
+      console.error("[BranchAdminView] Product UUID validation failed before submission:", {
+        productId: invalidItem.productId,
+        productName: invalidItem.productName,
+        sku: invalidItem.sku,
+        availableProductIds: products.map((p) => ({ id: p.id, name: p.name })),
+      });
+      showToast(errMsg, "error");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const actionItems = items.map((it) => ({
@@ -202,12 +230,16 @@ export function BranchAdminView({
         return;
       }
 
+      // Synchronize local AdminContext without triggering a second database insertion
       submitOrder({
         branchId: effectiveBranchId,
         branchName: activeBranch ? activeBranch.name : "Ice Spot Parlour",
         branchCode: activeBranch ? activeBranch.code : "BR-OLL-003",
         destinationFactory: "Varavoor Factory",
         requestedDeliveryDate: requestedDate,
+        serverOrderId: result.data?.orderId,
+        serverOrderNumber: result.data?.orderNumber,
+        skipServerSync: true,
         items,
         notes: orderNotes,
       });
@@ -219,6 +251,7 @@ export function BranchAdminView({
       });
       setOrderQuantities(resetMap);
       setOrderNotes("");
+      setRequestedDate(getTodayDateString());
 
       showToast(
         `Order #${result.data?.orderNumber || "submitted"} confirmed and sent to Varavoor Factory!`,
@@ -289,80 +322,110 @@ export function BranchAdminView({
 
       <form onSubmit={handleSubmitOrder}>
         {/* 2-Column Grid of Flavour Crate Counters */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          {products.map((prod) => {
-            const qty = orderQuantities[prod.id] || 0;
+        {products.length === 0 ? (
+          <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-200 rounded-2xl mb-6">
+            <AlertCircle className="w-8 h-8 text-amber-500 mx-auto mb-2" />
+            <h3 className="text-sm font-bold text-slate-800">No Authoritative Database Products Available</h3>
+            <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+              Unable to load active products from the database catalog. Order submission is disabled until verified catalog records are available.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            {products.map((prod) => {
+              const qty = orderQuantities[prod.id] || 0;
 
-            return (
-              <div
-                key={prod.id}
-                className="border border-slate-200/80 hover:border-amber-200 rounded-2xl p-4 sm:p-5 bg-white transition-all hover:shadow-xs flex items-center justify-between gap-4"
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-bold text-slate-900 leading-snug">
-                      {prod.name}
-                    </h3>
-                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
-                      {prod.category}
-                    </span>
+              return (
+                <div
+                  key={prod.id}
+                  className="border border-slate-200/80 hover:border-amber-200 rounded-2xl p-4 sm:p-5 bg-white transition-all hover:shadow-xs flex items-center justify-between gap-4"
+                >
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-bold text-slate-900 leading-snug">
+                        {prod.name}
+                      </h3>
+                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+                        {prod.category}
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-slate-500 font-medium mt-1">
+                      SKU: {prod.sku} &bull; 10 Sticks/Crate
+                    </p>
                   </div>
 
-                  <p className="text-xs text-slate-500 font-medium mt-1">
-                    SKU: {prod.sku} &bull; 10 Sticks/Crate
-                  </p>
-                </div>
+                  {/* Quantity Counter Control */}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => updateQuantity(prod.id, -1)}
+                      className="w-8 h-8 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 flex items-center justify-center transition-colors cursor-pointer"
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
 
-                {/* Quantity Counter Control */}
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => updateQuantity(prod.id, -1)}
-                    className="w-8 h-8 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 flex items-center justify-center transition-colors cursor-pointer"
-                  >
-                    <Minus className="w-3.5 h-3.5" />
-                  </button>
+                    <div className="w-12 text-center">
+                      <span className="text-base font-black text-slate-900">{qty}</span>
+                      <span className="block text-[10px] text-slate-400 font-bold uppercase leading-none">
+                        Crates
+                      </span>
+                    </div>
 
-                  <div className="w-12 text-center">
-                    <span className="text-base font-black text-slate-900">{qty}</span>
-                    <span className="block text-[10px] text-slate-400 font-bold uppercase leading-none">
-                      Crates
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => updateQuantity(prod.id, 1)}
+                      className="w-8 h-8 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-900 flex items-center justify-center transition-colors cursor-pointer font-bold"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={() => updateQuantity(prod.id, 1)}
-                    className="w-8 h-8 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-900 flex items-center justify-center transition-colors cursor-pointer font-bold"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                  </button>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* Delivery Date & Notes Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-200/70 mb-5">
           <div>
-            <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">
-              Requested Delivery Date
+            <label
+              htmlFor="requested-delivery-date"
+              className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider text-slate-500 mb-1"
+            >
+              <Calendar className="w-3.5 h-3.5 text-slate-500" />
+              <span>Requested Delivery Date</span>
             </label>
-            <input
-              type="text"
-              value={requestedDate}
-              onChange={(e) => setRequestedDate(e.target.value)}
-              placeholder="e.g. Next Friday (Oct 24)"
-              className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-amber-500"
-            />
+            <div className="relative">
+              <input
+                id="requested-delivery-date"
+                type="date"
+                value={requestedDate}
+                onChange={(e) => setRequestedDate(e.target.value)}
+                onClick={(e) => {
+                  try {
+                    (e.currentTarget as any).showPicker?.();
+                  } catch {
+                    // Fallback to standard native focus
+                  }
+                }}
+                className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-amber-500 cursor-pointer shadow-2xs"
+              />
+            </div>
+            <p className="text-[10px] text-slate-400 mt-1 font-medium">
+              Defaults to today. Click to pick or change the delivery date.
+            </p>
           </div>
 
           <div>
-            <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">
+            <label
+              htmlFor="parlour-storage-notes"
+              className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-500 mb-1"
+            >
               Parlour Storage Notes / Special Instructions
             </label>
             <input
+              id="parlour-storage-notes"
               type="text"
               value={orderNotes}
               onChange={(e) => setOrderNotes(e.target.value)}
@@ -405,7 +468,7 @@ export function BranchAdminView({
               type="submit"
               id="btn-submit-branch-order"
               data-testid="submit-branch-order"
-              disabled={isSubmitting || totalCrates === 0 || !isBranchAuthorized || Boolean(activePendingOrder)}
+              disabled={isSubmitting || totalCrates === 0 || !isBranchAuthorized || Boolean(activePendingOrder) || products.length === 0}
               className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#0F172A] hover:bg-[#1E293B] text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed min-w-[260px]"
             >
               {isSubmitting ? (

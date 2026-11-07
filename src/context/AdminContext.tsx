@@ -271,12 +271,14 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     setUsers(INITIAL_ADMIN_USERS);
     setDiscrepancies(INITIAL_DISCREPANCIES);
     setInventoryLogs(INITIAL_INVENTORY_LOGS);
-    setBranches(BRANCHES.map((b) => ({ ...b, isOpen: b.status !== "candidate" })));
+    const resetBranches = BRANCHES.map((b) => ({ ...b, isOpen: b.status !== "candidate" }));
+    setBranches(resetBranches);
     setFleetVehicles(INITIAL_FLEET_VEHICLES);
     if (typeof window !== "undefined") {
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem("icespot_admin_demo_state_v1");
       localStorage.removeItem("icespot_active_dispatch_id");
+      window.dispatchEvent(new CustomEvent("icespot_branch_status_update", { detail: resetBranches }));
     }
     showToast("Demonstration data reset to initial seed values.", "info");
   };
@@ -397,7 +399,9 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     const destinationFactory = data.destinationFactory || "Varavoor Factory";
     const nextNum = 105 + orders.length;
     const orderNumber = data.serverOrderNumber
-      ? `ORD-2026-${data.serverOrderNumber}`
+      ? (String(data.serverOrderNumber).startsWith("ORD-")
+          ? String(data.serverOrderNumber)
+          : `ORD-2026-${data.serverOrderNumber}`)
       : `ORD-2026-${nextNum}`;
     const orderId = data.serverOrderId || `ord-${nextNum}`;
 
@@ -1713,6 +1717,9 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     });
     setBranches(updated);
     persistState({ branches: updated });
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("icespot_branch_status_update", { detail: updated }));
+    }
 
     const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (UUID_REGEX.test(branchId)) {
@@ -1721,12 +1728,18 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         if (!res.success) {
           setBranches(previousBranches);
           persistState({ branches: previousBranches });
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new CustomEvent("icespot_branch_status_update", { detail: previousBranches }));
+          }
           showToast(`Failed to update branch status: ${res.message}`, "error");
           return { success: false, message: res.message };
         }
       } catch (err: any) {
         setBranches(previousBranches);
         persistState({ branches: previousBranches });
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("icespot_branch_status_update", { detail: previousBranches }));
+        }
         const errorMsg = err.message || "Failed to update branch status on server.";
         showToast(errorMsg, "error");
         return { success: false, message: errorMsg };
@@ -1746,18 +1759,27 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     const updated = branches.map((b) => ({ ...b, isOpen }));
     setBranches(updated);
     persistState({ branches: updated });
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("icespot_branch_status_update", { detail: updated }));
+    }
 
     try {
       const res = await setAllBranchesStatusAction(isOpen);
       if (!res.success) {
         setBranches(previousBranches);
         persistState({ branches: previousBranches });
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("icespot_branch_status_update", { detail: previousBranches }));
+        }
         showToast(`Failed to update network branches: ${res.message}`, "error");
         return { success: false, message: res.message };
       }
     } catch (err: any) {
       setBranches(previousBranches);
       persistState({ branches: previousBranches });
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("icespot_branch_status_update", { detail: previousBranches }));
+      }
       const errorMsg = err.message || "Failed to update network branches.";
       showToast(errorMsg, "error");
       return { success: false, message: errorMsg };

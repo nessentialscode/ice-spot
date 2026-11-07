@@ -19,6 +19,26 @@ export interface ActionResult<T = any> {
  */
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+const BRANCH_CODE_LOOKUP: Record<string, string> = {
+  "varavoor-factory": "BR-VRV-001",
+  "thrissur-town": "BR-TSR-002",
+  "ollur-branch": "BR-OLL-003",
+  "thrissur-shakthan": "BR-SHK-004",
+  "pudukad": "BR-PDK-005",
+  "pallimoola": "BR-PLM-006",
+  "kechery": "BR-KCH-007",
+  "chalakudy": "BR-CLK-008",
+  "wadakkanchery-branch": "BR-WDK-009",
+  "guruvayur": "BR-GVR-010",
+  "vadanappally": "BR-VDN-011",
+  "triprayar": "BR-TPR-012",
+  "kattoor": "BR-KTR-013",
+  "kanjani": "BR-KNJ-014",
+  "palakkad": "BR-PLK-015",
+  "kadampuzha": "BR-KDM-016",
+  "cusat-road": "BR-CUS-017",
+};
+
 export async function toggleBranchStatusAction(
   branchId: string,
   isOpen: boolean
@@ -33,7 +53,10 @@ export async function toggleBranchStatusAction(
       };
     }
 
-    if (!branchId || !UUID_REGEX.test(branchId)) {
+    const isUUID = UUID_REGEX.test(branchId);
+    const resolvedCode = BRANCH_CODE_LOOKUP[branchId] || (branchId.startsWith("BR-") ? branchId : null);
+
+    if (!branchId || (!isUUID && !resolvedCode)) {
       return {
         success: false,
         message: "Invalid branch identifier format (UUID required).",
@@ -44,14 +67,20 @@ export async function toggleBranchStatusAction(
     const supabase = await createServerSupabaseClient();
 
     // Update branch is_active in Supabase
-    const { data: updatedRows, error: updateError } = await supabase
+    let query = supabase
       .from("branches")
       .update({
         is_active: isOpen,
         updated_at: new Date().toISOString(),
-      })
-      .eq("id", branchId)
-      .select("id");
+      });
+
+    if (isUUID) {
+      query = query.eq("id", branchId);
+    } else if (resolvedCode) {
+      query = query.eq("code", resolvedCode);
+    }
+
+    const { data: updatedRows, error: updateError } = await query.select("id");
 
     if (updateError) {
       return {
@@ -75,7 +104,7 @@ export async function toggleBranchStatusAction(
         actor_id: auth.user.id,
         action: isOpen ? "BRANCH_ACTIVATED" : "BRANCH_DEACTIVATED",
         entity_type: "branch",
-        entity_id: branchId,
+        entity_id: updatedRows[0].id,
         details: { isActive: isOpen, actorRole: auth.profile?.role },
       });
     }
@@ -199,6 +228,44 @@ export async function getBranchStatusAction(
       success: false,
       message: err.message || "Failed to retrieve status.",
       error: "SERVER_ERROR",
+    };
+  }
+}
+
+/**
+ * Retrieves the operational active status for all branches in the network.
+ * Used for public directory status synchronization and network status indicators.
+ */
+export async function getAllBranchStatusesAction(): Promise<ActionResult<Record<string, boolean>>> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await supabase
+      .from("branches")
+      .select("id, code, name, is_active");
+
+    if (error || !data) {
+      return {
+        success: false,
+        message: error?.message || "Failed to load branch statuses from database.",
+      };
+    }
+
+    const statusMap: Record<string, boolean> = {};
+    for (const b of data) {
+      if (b.id) statusMap[b.id] = b.is_active;
+      if (b.code) statusMap[b.code] = b.is_active;
+      if (b.name) statusMap[b.name.toLowerCase().trim()] = b.is_active;
+    }
+
+    return {
+      success: true,
+      message: "Branch statuses loaded.",
+      data: statusMap,
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      message: err.message || "Failed to load branch statuses.",
     };
   }
 }

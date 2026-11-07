@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { BRANCHES } from "@/lib/data/branches";
-import { Region } from "@/types";
+import { Branch, Region } from "@/types";
 import BranchCard from "./BranchCard";
+import { getAllBranchStatusesAction } from "@/lib/actions/branches";
 
 interface BranchDirectoryProps {
   showIntro?: boolean;
@@ -25,7 +26,7 @@ interface MobileCategoryConfig {
   label: string;
   districtName: string;
   icon: string;
-  match: (branch: (typeof BRANCHES)[number]) => boolean;
+  match: (branch: Branch) => boolean;
 }
 
 const MOBILE_CATEGORIES: MobileCategoryConfig[] = [
@@ -74,13 +75,115 @@ const MOBILE_CATEGORIES: MobileCategoryConfig[] = [
 ];
 
 export default function BranchDirectory({ showIntro = true }: BranchDirectoryProps) {
+  const [branchesList, setBranchesList] = useState<Branch[]>(() => {
+    return BRANCHES.map((b) => ({
+      ...b,
+      isOpen: b.isOpen ?? (b.status !== "candidate"),
+    }));
+  });
+
   const [selectedRegion, setSelectedRegion] = useState<Region>("all");
   const [selectedMobileCategory, setSelectedMobileCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Synchronize branch open/closed statuses from Admin Portal & Database
+  useEffect(() => {
+    // 1. Sync from localStorage (shared with Admin Portal in same browser session)
+    const syncFromLocalStorage = () => {
+      try {
+        const saved = localStorage.getItem("icespot_admin_demo_state_v2");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed.branches)) {
+            const statusMap = new Map<string, boolean>();
+            parsed.branches.forEach((b: any) => {
+              if (b.id) statusMap.set(b.id, Boolean(b.isOpen));
+              if (b.code) statusMap.set(b.code, Boolean(b.isOpen));
+              if (b.name) statusMap.set(b.name.toLowerCase().trim(), Boolean(b.isOpen));
+            });
+
+            setBranchesList((prev) =>
+              prev.map((b) => {
+                const open =
+                  statusMap.get(b.id) ??
+                  (b.code ? statusMap.get(b.code) : undefined) ??
+                  statusMap.get(b.name.toLowerCase().trim());
+                return open !== undefined ? { ...b, isOpen: open } : b;
+              })
+            );
+          }
+        }
+      } catch (e) {
+        console.warn("Could not sync branch status from storage", e);
+      }
+    };
+
+    // Run initial sync on mount
+    syncFromLocalStorage();
+
+    // 2. Listen to custom live event from AdminContext (instantaneous in same tab/session)
+    const handleCustomUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (Array.isArray(customEvent.detail)) {
+        const statusMap = new Map<string, boolean>();
+        customEvent.detail.forEach((b: any) => {
+          if (b.id) statusMap.set(b.id, Boolean(b.isOpen));
+          if (b.code) statusMap.set(b.code, Boolean(b.isOpen));
+          if (b.name) statusMap.set(b.name.toLowerCase().trim(), Boolean(b.isOpen));
+        });
+
+        setBranchesList((prev) =>
+          prev.map((b) => {
+            const open =
+              statusMap.get(b.id) ??
+              (b.code ? statusMap.get(b.code) : undefined) ??
+              statusMap.get(b.name.toLowerCase().trim());
+            return open !== undefined ? { ...b, isOpen: open } : b;
+          })
+        );
+      } else {
+        syncFromLocalStorage();
+      }
+    };
+
+    // 3. Listen to storage changes from other tabs
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "icespot_admin_demo_state_v2") {
+        syncFromLocalStorage();
+      }
+    };
+
+    window.addEventListener("icespot_branch_status_update", handleCustomUpdate);
+    window.addEventListener("storage", handleStorageChange);
+
+    // 4. Query live server action in background for persistent DB state
+    getAllBranchStatusesAction()
+      .then((res) => {
+        if (res.success && res.data) {
+          const dbStatuses = res.data;
+          setBranchesList((prev) =>
+            prev.map((b) => {
+              const code = b.code;
+              const openFromDb =
+                dbStatuses[b.id] ??
+                (code ? dbStatuses[code] : undefined) ??
+                dbStatuses[b.name.toLowerCase().trim()];
+              return openFromDb !== undefined ? { ...b, isOpen: openFromDb } : b;
+            })
+          );
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      window.removeEventListener("icespot_branch_status_update", handleCustomUpdate);
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, []);
+
   const trimmedQuery = searchQuery.toLowerCase().trim();
 
-  const matchesSearch = (branch: (typeof BRANCHES)[number]) => {
+  const matchesSearch = (branch: Branch) => {
     if (!trimmedQuery) return true;
     return (
       branch.name.toLowerCase().includes(trimmedQuery) ||
@@ -92,7 +195,7 @@ export default function BranchDirectory({ showIntro = true }: BranchDirectoryPro
 
   // Desktop filtered branches
   const desktopFilteredBranches = useMemo(() => {
-    return BRANCHES.filter((branch) => {
+    return branchesList.filter((branch) => {
       let matchesRegion = true;
       if (selectedRegion === "all") {
         matchesRegion = true;
@@ -108,12 +211,12 @@ export default function BranchDirectory({ showIntro = true }: BranchDirectoryPro
 
       return matchesRegion && matchesSearch(branch);
     });
-  }, [selectedRegion, trimmedQuery]);
+  }, [branchesList, selectedRegion, trimmedQuery]);
 
   // Mobile grouped branches by category (Thrissur Town, Thrissur Coastal, Ernakulam, Palakkad, Other)
   const mobileCategoryGroups = useMemo(() => {
     return MOBILE_CATEGORIES.map((category) => {
-      const branches = BRANCHES.filter((branch) => {
+      const branches = branchesList.filter((branch) => {
         return category.match(branch) && matchesSearch(branch);
       });
 
@@ -122,7 +225,7 @@ export default function BranchDirectory({ showIntro = true }: BranchDirectoryPro
         branches,
       };
     });
-  }, [trimmedQuery]);
+  }, [branchesList, trimmedQuery]);
 
   // Filtered categories according to selected mobile chip
   const displayedMobileGroups = useMemo(() => {
@@ -135,6 +238,10 @@ export default function BranchDirectory({ showIntro = true }: BranchDirectoryPro
   const mobileTotalMatches = useMemo(() => {
     return mobileCategoryGroups.reduce((sum, group) => sum + group.branches.length, 0);
   }, [mobileCategoryGroups]);
+
+  // Flagship Varavoor Factory branch resolution
+  const factoryBranch = branchesList.find((b) => b.isFactoryHeadquarters || b.id === "varavoor-factory");
+  const isFactoryOpen = factoryBranch ? (factoryBranch.isOpen ?? true) : true;
 
   return (
     <section className="branches-section" id="branches">
@@ -152,7 +259,20 @@ export default function BranchDirectory({ showIntro = true }: BranchDirectoryPro
         {/* Main Franchise Varavoor Factory Feature Card */}
         <div className="flagship-branch-card">
           <div className="flagship-info">
-            <span className="flagship-badge">★ MAIN FRANCHISE &amp; FACTORY HEADQUARTERS</span>
+            <div className="flagship-badge-row">
+              <span className="flagship-badge">★ MAIN FRANCHISE &amp; FACTORY HEADQUARTERS</span>
+              {isFactoryOpen ? (
+                <span className="branch-op-badge op-open flagship-op-badge" title="Ice Spot Varavoor Factory is currently OPEN">
+                  <span className="branch-op-dot dot-open" />
+                  <span>OPEN</span>
+                </span>
+              ) : (
+                <span className="branch-op-badge op-closed flagship-op-badge" title="Ice Spot Varavoor Factory is temporarily CLOSED">
+                  <span className="branch-op-dot dot-closed" />
+                  <span>CLOSED</span>
+                </span>
+              )}
+            </div>
             <h3>Ice Spot Varavoor Factory</h3>
             <p className="flagship-address">
               Main Manufacturing Factory &amp; Central Franchise Hub, Varavoor, Wadakkanchery, Thrissur, Kerala 680585, India.
